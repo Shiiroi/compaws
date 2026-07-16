@@ -197,6 +197,7 @@ export const ReportForm: React.FC<ReportFormProps> = ({
             style={{
               padding: '8px 16px',
               backgroundColor: '#f3f4f6',
+              color: '#374151',
               border: 'none',
               borderRadius: '8px',
               cursor: 'pointer',

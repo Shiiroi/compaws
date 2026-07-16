@@ -110,6 +110,7 @@ const HomePage: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['places-in-bounds'] });
     queryClient.invalidateQueries({ queryKey: ['reports-for-place'] });
     queryClient.invalidateQueries({ queryKey: ['home-stats'] });
+    setGhostPlace(null);
   };
 
   const handleNicknameSubmit = async (nickname: string) => {
@@ -191,7 +192,7 @@ const HomePage: React.FC = () => {
                 error={null}
                 onAddPlaceClick={() => {
                   setIsAddingPlace(true);
-                  handleClosePanel();
+                  setIsGhostSelected(false);
                 }}
               />
             )}
@@ -214,7 +215,10 @@ const HomePage: React.FC = () => {
               >
                 <AddPlaceForm
                   initialPlace={ghostPlace}
-                  onClose={() => setIsAddingPlace(false)}
+                  onClose={() => {
+                    setIsAddingPlace(false);
+                    setGhostPlace(null);
+                  }}
                   onSuccess={handleFormSuccess}
                   onTriggerNicknamePrompt={() => setShowNicknamePrompt(true)}
                 />
