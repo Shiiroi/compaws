@@ -295,16 +295,44 @@ export const MapView: React.FC<MapViewProps> = ({
   const clusters = getClusters();
 
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+    <div 
+      style={{ 
+        width: '100%', 
+        height: '100%', 
+        position: 'relative',
+        borderRadius: '24px',
+        overflow: 'hidden',
+        boxShadow: '0 8px 25px rgba(224, 122, 95, 0.08)',
+      }}
+    >
+      {/* 
+        WHY THE CSS FILTER:
+        Applies a subtle warm sepia and saturation tint to pull the grayscale basemap
+        toward our cutesy cream/pink brand palette. If road/city names become hard to read,
+        dial the sepia or saturate percentage down instead of removing it completely.
+      */}
+      <style>{`
+        .map-container .leaflet-tile-pane {
+          filter: sepia(8%) saturate(85%) hue-rotate(-8deg);
+        }
+      `}</style>
       <MapContainer
         center={initialCenter}
         zoom={DEFAULT_ZOOM}
         zoomControl={false}
+        className="map-container"
         style={{ width: '100%', height: '100%', zIndex: 1 }}
       >
+        {/*
+          WHY CARTO POSITRON:
+          CARTO Positron is an extremely light, clean basemap that minimizes visual road/highway noise,
+          making our custom pink paw markers stand out as clear focal points.
+          We choose this over CARTO Voyager because Voyager is too colorful/busy and clashes
+          with our custom pink-and-white theme.
+        */}
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
 
         <MapEvents onBoundsChange={onBoundsChange} onZoomChange={setZoom} />
