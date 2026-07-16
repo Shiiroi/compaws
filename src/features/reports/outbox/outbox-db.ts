@@ -1,3 +1,5 @@
+import { uuidv4 } from '../../../shared/utils/uuid';
+
 /**
  * Represents a report stored locally while the client is offline.
  */
@@ -47,7 +49,7 @@ function openDB(): Promise<IDBDatabase> {
 export async function addPendingReport(payload: any): Promise<PendingReport> {
   const db = await openDB();
   const report: PendingReport = {
-    id: crypto.randomUUID(),
+    id: uuidv4(),
     payload,
     created_at: new Date().toISOString(),
     synced: false,

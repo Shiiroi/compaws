@@ -116,13 +116,21 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
           onClick={onClose}
           aria-label="Close panel"
           style={{
-            background: 'none',
+            background: '#f3f4f6',
             border: 'none',
-            fontSize: '22px',
+            borderRadius: '50%',
+            width: '32px',
+            height: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '18px',
             cursor: 'pointer',
-            color: theme.colors.textMuted,
-            padding: '4px',
+            color: theme.colors.textDark,
+            boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+            padding: 0,
             lineHeight: 1,
+            flexShrink: 0,
           }}
         >
           &times;
@@ -151,6 +159,23 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
             }}
           >
             Add to Directory 🐾
+          </button>
+          <button
+            onClick={onClose}
+            style={{
+              width: '100%',
+              marginTop: '8px',
+              padding: '10px',
+              backgroundColor: '#f3f4f6',
+              color: '#374151',
+              border: 'none',
+              borderRadius: '20px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontSize: '13px',
+            }}
+          >
+            Close Details
           </button>
         </div>
       ) : (
@@ -272,6 +297,25 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
               }}
             >
               Flag this place ⚠️
+            </button>
+          </div>
+
+          <div style={{ marginTop: '16px', borderTop: `1px solid ${theme.colors.borderLight}`, paddingTop: '12px' }}>
+            <button
+              onClick={onClose}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                backgroundColor: '#f3f4f6',
+                color: '#374151',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Close Details
             </button>
           </div>
         </>

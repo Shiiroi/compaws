@@ -1,4 +1,5 @@
 import { supabase } from '../api/supabase-client';
+import { uuidv4 } from './uuid';
 
 const DEVICE_ID_KEY = 'pet-friendly-ph-device-id';
 
@@ -12,7 +13,7 @@ export function getDeviceId(): string {
   let deviceId = localStorage.getItem(DEVICE_ID_KEY);
   
   if (!deviceId) {
-    deviceId = crypto.randomUUID();
+    deviceId = uuidv4();
     localStorage.setItem(DEVICE_ID_KEY, deviceId);
     
     // Register the new device anonymously in Supabase

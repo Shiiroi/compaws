@@ -68,7 +68,7 @@ export const ReportForm: React.FC<ReportFormProps> = ({
         return;
       }
 
-      const { error } = await supabase.from('pet_policy_reports').insert(payload);
+      const { error } = await supabase.from('pet_policy_reports').upsert(payload, { onConflict: 'place_id, device_id' });
       if (error) throw error;
 
       triggerNicknamePromptFlow();

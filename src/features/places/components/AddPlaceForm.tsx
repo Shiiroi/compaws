@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '../../../shared/api/supabase-client';
 import { getDeviceId } from '../../../shared/utils/device-id';
 import { getCurrentPosition } from '../../../shared/utils/geofence';
+import { uuidv4 } from '../../../shared/utils/uuid';
 import { PlaceSearchBar } from './PlaceSearchBar';
 import { getPlaceDetails } from '../api/search-google-places';
 
@@ -57,7 +58,7 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
   const [selectedPlace, setSelectedPlace] = useState<SelectedSearch | null>(() => {
     if (initialPlace) {
       return {
-        id: `custom-${crypto.randomUUID()}`,
+        id: `custom-${uuidv4()}`,
         name: initialPlace.name,
         address: initialPlace.address,
         lat: initialPlace.latitude,
@@ -83,7 +84,7 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
   const categories = ['Café', 'Restaurant', 'Park', 'Mall', 'Hotel', 'Shop', 'Other'];
 
   const handleSelectSearch = (lat: number, lng: number, name: string, address: string) => {
-    setSelectedPlace({ id: `custom-${crypto.randomUUID()}`, name, address, lat, lng });
+    setSelectedPlace({ id: `custom-${uuidv4()}`, name, address, lat, lng });
     setCity(extractCityFromAddress(address));
     setErrorMsg(null);
   };
