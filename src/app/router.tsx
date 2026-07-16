@@ -293,7 +293,7 @@ const HomePage: React.FC = () => {
             )}
 
             {/* Toggle add place button overlay */}
-            {!isAddingPlace && !reportingPlace && !flaggingPlace && (
+            {!isAddingPlace && !reportingPlace && !flaggingPlace && !selectedPlace && !isGhostSelected && (
               <button
                 onClick={() => {
                   setIsAddingPlace(true);

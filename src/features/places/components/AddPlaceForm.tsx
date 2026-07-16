@@ -32,6 +32,22 @@ interface SelectedSearch {
  * - If the device's GPS fails or is blocked, and VITE_ENFORCE_GEOFENCE is false, we
  *   fall back to geocoding or lazy-fetching the place's coordinates from Google.
  */
+/**
+ * Helper to parse and extract the city candidate from a Google formatted address string.
+ */
+function extractCityFromAddress(address: string): string {
+  if (!address) return '';
+  const parts = address.split(',').map((p) => p.trim());
+  // Standard format in PH address strings: [..., City, Province/Metro Manila, Country]
+  if (parts.length >= 3) {
+    return parts[parts.length - 3];
+  }
+  if (parts.length >= 2) {
+    return parts[parts.length - 2];
+  }
+  return '';
+}
+
 export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
   onClose,
   onSuccess,
@@ -50,7 +66,14 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
     }
     return null;
   });
-  const [city, setCity] = useState('');
+
+  const [city, setCity] = useState(() => {
+    if (initialPlace?.address) {
+      return extractCityFromAddress(initialPlace.address);
+    }
+    return '';
+  });
+
   const [category, setCategory] = useState('Café');
   const [claim, setClaim] = useState<'allowed' | 'not_allowed' | 'outdoor_only'>('allowed');
   const [notes, setNotes] = useState('');
@@ -61,6 +84,7 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
 
   const handleSelectSearch = (lat: number, lng: number, name: string, address: string) => {
     setSelectedPlace({ id: `custom-${crypto.randomUUID()}`, name, address, lat, lng });
+    setCity(extractCityFromAddress(address));
     setErrorMsg(null);
   };
 
