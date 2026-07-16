@@ -66,19 +66,22 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
     <div
       style={{
         position: 'absolute',
-        bottom: '24px',
-        left: '24px',
-        right: '24px',
-        maxWidth: '400px',
+        bottom: '20px',
+        left: '20px',
+        right: '20px',
+        maxWidth: '380px',
+        maxHeight: 'calc(100% - 40px)',
+        overflowY: 'auto',
         backgroundColor: '#ffffff',
         borderRadius: '20px',
         boxShadow: '0 10px 25px rgba(0,0,0,0.12)',
-        padding: '24px',
+        padding: '20px',
         zIndex: 1000,
         fontFamily: theme.fonts.body,
         color: theme.colors.textDark,
         animation: 'slideUp 0.3s ease-out',
         border: `2px solid ${theme.colors.softPink}`,
+        boxSizing: 'border-box',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -228,9 +231,12 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
             ) : error ? (
               <p style={{ fontSize: '12px', color: theme.colors.notAllowed }}>Failed to load reports.</p>
             ) : !reports || reports.length === 0 ? (
-              <p style={{ fontSize: '12px', color: theme.colors.textMuted, fontStyle: 'italic' }}>
-                No reports submitted yet.
-              </p>
+              <div style={{ textAlign: 'center', padding: '12px 0', color: theme.colors.textMuted }}>
+                <span style={{ fontSize: '18px', display: 'block', marginBottom: '2px' }}>🐾</span>
+                <span style={{ fontSize: '11px', fontStyle: 'italic' }}>
+                  No reports yet -- be the first to verify!
+                </span>
+              </div>
             ) : (
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 {(() => {
