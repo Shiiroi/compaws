@@ -196,9 +196,27 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
         textAlign: 'left',
       }}
     >
-      <h3 style={{ margin: '0 0 16px 0', fontSize: '18px' }}>
-        Add a New Spot 🐾
-      </h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h3 style={{ margin: 0, fontSize: '18px' }}>
+          Add a New Spot 🐾
+        </h3>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close form"
+          style={{
+            background: 'none',
+            border: 'none',
+            fontSize: '22px',
+            cursor: 'pointer',
+            color: '#6b7280',
+            padding: '4px',
+            lineHeight: 1,
+          }}
+        >
+          &times;
+        </button>
+      </div>
 
       {errorMsg && (
         <div style={{ color: '#ef4444', backgroundColor: '#fee2e2', padding: '10px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
@@ -208,15 +226,36 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
 
       {/* Place search lookup */}
       {!selectedPlace ? (
-        <div style={{ position: 'relative', height: '100px', marginBottom: '16px' }}>
-          <label style={{ display: 'block', fontWeight: 600, marginBottom: '8px', fontSize: '14px' }}>
-            Find the place using Google Search:
-          </label>
-          <PlaceSearchBar
-            loadedPlaces={[]}
-            onSelectLocalPlace={handleSelectLocal}
-            onSelectGeocodePlace={handleSelectSearch}
-          />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minHeight: '180px' }}>
+          <div style={{ position: 'relative', height: '100px' }}>
+            <label style={{ display: 'block', fontWeight: 600, marginBottom: '8px', fontSize: '14px' }}>
+              Find the place using Google Search:
+            </label>
+            <PlaceSearchBar
+              loadedPlaces={[]}
+              onSelectLocalPlace={handleSelectLocal}
+              onSelectGeocodePlace={handleSelectSearch}
+            />
+          </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#f3f4f6',
+                color: '#374151',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 600,
+              }}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       ) : (
         /* Form content prefilled once place is selected */
@@ -277,6 +316,8 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
                   padding: '10px',
                   borderRadius: '8px',
                   border: '1px solid #ccc',
+                  backgroundColor: '#ffffff',
+                  color: '#1f2937',
                   fontSize: '14px',
                   boxSizing: 'border-box',
                 }}
@@ -295,6 +336,7 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
                   borderRadius: '8px',
                   border: '1px solid #ccc',
                   backgroundColor: '#ffffff',
+                  color: '#1f2937',
                   fontSize: '14px',
                   boxSizing: 'border-box',
                 }}
@@ -371,6 +413,22 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <button
               type="button"
+              onClick={onClose}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#f3f4f6',
+                color: '#374151',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 600,
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
               onClick={() => setSelectedPlace(null)}
               style={{
                 padding: '8px 16px',
@@ -380,6 +438,7 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
                 borderRadius: '8px',
                 cursor: 'pointer',
                 fontSize: '14px',
+                fontWeight: 600,
               }}
             >
               Reset Search
