@@ -275,24 +275,38 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
 
           {(() => {
             const userReported = reports.some((r) => r.device_id === getDeviceId());
+            const ownReportsToday = reports.filter((r) => {
+              if (r.device_id !== getDeviceId()) return false;
+              const reportDate = new Date(r.created_at).toDateString();
+              const todayDate = new Date().toDateString();
+              return reportDate === todayDate;
+            });
+            const isRateLimited = ownReportsToday.length >= 2;
+
             return (
-              <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
                 <button
                   onClick={onReportClick}
+                  disabled={isRateLimited}
                   style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    backgroundColor: theme.colors.terracotta,
-                    color: '#ffffff',
+                    width: '100%',
+                    padding: '10px 12px',
+                    backgroundColor: isRateLimited ? '#d1d5db' : theme.colors.terracotta,
+                    color: isRateLimited ? '#9ca3af' : '#ffffff',
                     border: 'none',
                     borderRadius: '8px',
-                    fontSize: '12px',
+                    fontSize: '13px',
                     fontWeight: 600,
-                    cursor: 'pointer',
+                    cursor: isRateLimited ? 'not-allowed' : 'pointer',
                   }}
                 >
                   {userReported ? 'Update Your Report 🐾' : 'Confirm or Suggest Correction 🐾'}
                 </button>
+                {isRateLimited && (
+                  <p style={{ color: '#ef4444', fontSize: '11px', margin: '4px 0 0 0', textAlign: 'center', lineHeight: '1.4' }}>
+                    You have already updated or suggested a report for this spot twice today. Please try again tomorrow! 🐾
+                  </p>
+                )}
               </div>
             );
           })()}
