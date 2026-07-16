@@ -2,10 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { Hero, BrowsableList, HowItWorks, FAQ } from '../features/home';
 import { MapView } from '../features/map';
-import { PlaceSearchBar, PlaceDetail, usePlacesInBounds } from '../features/places';
+import { 
+  PlaceSearchBar, 
+  PlaceDetail, 
+  usePlacesInBounds, 
+  loadGoogleMapsScript 
+} from '../features/places';
 import { useReportsForPlace } from '../features/reports';
 import { type PlaceInBounds, type MapBounds } from '../shared/types/geo';
 import { theme } from '../shared/styles/theme';
+import { env } from '../config/env';
 
 /**
  * Main application dashboard containing sequential homepage sections:
@@ -18,6 +24,15 @@ const HomePage: React.FC = () => {
   const [isGhostSelected, setIsGhostSelected] = useState(false);
   const [centerOverride, setCenterOverride] = useState<[number, number] | null>(null);
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+
+  // Initialize the Google Maps SDK script dynamically on mount
+  useEffect(() => {
+    if (env.VITE_GOOGLE_PLACES_API_KEY) {
+      loadGoogleMapsScript(env.VITE_GOOGLE_PLACES_API_KEY).catch((err) => {
+        console.error('[Google Maps SDK Load Failed]:', err);
+      });
+    }
+  }, []);
 
   const listRef = useRef<HTMLDivElement>(null);
 

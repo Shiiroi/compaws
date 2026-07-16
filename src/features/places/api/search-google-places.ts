@@ -1,83 +1,107 @@
-/**
- * NOTE ON CONCEPTS:
- * This file handles searching for general geographical locations, cities, or addresses via Google Places
- * (with an OpenStreetMap Nominatim fallback) to help users center the map view.
- * 
- * SEPARATION OF CONCERNS:
- * - This search queries external mapping directories (Google/OSM) to locate general reference points.
- * - It does NOT query or modify our own Supabase `places` table, which strictly holds user-submitted
- *   pet-friendly verification records.
- */
-
 export interface GeocodingResult {
-  /** Unique identifier for the search result. */
+  /** Unique identifier for the search result (place_id or OSM id). */
   id: string;
   /** Primary label representing the location name. */
   displayName: string;
   /** Full text address. */
   address: string;
-  /** Latitude coordinate. */
-  lat: number;
-  /** Longitude coordinate. */
-  lng: number;
+  /** Latitude coordinate (optional during autocomplete, resolved on selection). */
+  lat?: number;
+  /** Longitude coordinate (optional during autocomplete). */
+  lng?: number;
+}
+
+let isLoaded = false;
+let loadPromise: Promise<void> | null = null;
+
+/**
+ * Dynamically appends the Google Maps JavaScript API script to the head.
+ * 
+ * WHY DYNAMIC LOADING:
+ * Avoids hardcoding key injection or script tags inside index.html, allowing the
+ * React app to read the validated env config variable dynamically during startup.
+ * 
+ * @param {string} apiKey - The client-restricted Google Maps API key.
+ * @returns {Promise<void>} Resolves when script has loaded.
+ */
+export function loadGoogleMapsScript(apiKey: string): Promise<void> {
+  if (isLoaded) return Promise.resolve();
+  if (loadPromise) return loadPromise;
+
+  loadPromise = new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') return resolve();
+
+    // Prevent double-loading script tags if already initialized
+    if ((window as any).google?.maps) {
+      isLoaded = true;
+      return resolve();
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
+      apiKey
+    )}`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      isLoaded = true;
+      resolve();
+    };
+    script.onerror = () => {
+      reject(new Error('[Google Maps Script Load Error] Failed to download script tag.'));
+    };
+    document.head.appendChild(script);
+  });
+
+  return loadPromise;
 }
 
 /**
- * Searches geocoding directories to resolve address queries into coordinates.
+ * Searches geocoding directories to resolve address autocomplete predictions.
  * 
- * WHY DUAL-ENGINE:
- * To avoid requiring developers or users to instantly purchase or configure a billed
- * Google Maps API Key for local development, we attempt to use the Google Places JS SDK if loaded,
- * and seamlessly fall back to the free, public OpenStreetMap Nominatim search API.
+ * WHY PLACES (NEW) API & AUTOCOMPLETE SUGGESTIONS:
+ * Old Google Maps AutocompleteService is deprecated and blocked for new projects.
+ * We import the new 'places' library and fetch predictions using AutocompleteSuggestion.
  * 
- * @param {string} query - The search query text entered by the user (e.g., "Quezon City").
- * @returns {Promise<GeocodingResult[]>} Resolved coordinate results.
+ * @param {string} query - The search string query.
+ * @param {any} sessionToken - The active AutocompleteSessionToken object.
+ * @returns {Promise<GeocodingResult[]>} Pure text predictions list (Google) or resolved items (OSM fallback).
  */
-export async function searchGooglePlaces(query: string): Promise<GeocodingResult[]> {
+export async function searchGooglePlaces(
+  query: string,
+  sessionToken?: any
+): Promise<GeocodingResult[]> {
   if (!query || query.trim().length < 3) {
     return [];
   }
 
-  // Check if the Google Maps JS SDK library has been successfully loaded on the window
-  const hasGoogleSDK = typeof window !== 'undefined' && (window as any).google?.maps?.places;
+  const hasGoogleSDK = typeof window !== 'undefined' && (window as any).google?.maps;
 
   if (hasGoogleSDK) {
-    return new Promise((resolve) => {
-      const autocompleteService = new (window as any).google.maps.places.AutocompleteService();
-      const geocoder = new (window as any).google.maps.Geocoder();
+    try {
+      // Dynamic import of the modern places library as recommended by Google Maps
+      const { AutocompleteSuggestion } = await (window as any).google.maps.importLibrary("places");
 
-      autocompleteService.getPlacePredictions(
-        { input: query, componentRestrictions: { country: 'ph' } },
-        (predictions: any[] | null, status: any) => {
-          if (status !== 'OK' || !predictions) {
-            return resolve([]);
-          }
+      const result = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+        input: query,
+        sessionToken,
+        includedRegionCodes: ["ph"],
+      });
 
-          // Map predictions to geocoder promises to resolve lat/lng
-          const detailPromises = predictions.slice(0, 5).map((pred) => {
-            return new Promise<GeocodingResult | null>((detailResolve) => {
-              geocoder.geocode({ placeId: pred.place_id }, (results: any[] | null, geoStatus: any) => {
-                if (geoStatus !== 'OK' || !results || !results[0]) {
-                  return detailResolve(null);
-                }
-                const loc = results[0].geometry.location;
-                detailResolve({
-                  id: pred.place_id,
-                  displayName: pred.structured_formatting.main_text,
-                  address: pred.description,
-                  lat: loc.lat(),
-                  lng: loc.lng(),
-                });
-              });
-            });
-          });
+      const suggestions = result.suggestions || [];
 
-          Promise.all(detailPromises).then((results) => {
-            resolve(results.filter((r): r is GeocodingResult => r !== null));
-          });
-        }
-      );
-    });
+      return suggestions.map((s: any) => {
+        const pred = s.placePrediction;
+        return {
+          id: pred.placeId,
+          displayName: pred.mainText ? pred.mainText.toString() : (pred.text ? pred.text.toString() : ''),
+          address: pred.text ? pred.text.toString() : '',
+        };
+      });
+    } catch (err) {
+      console.error('[Google Autocomplete Suggestion Failed]:', err);
+      return [];
+    }
   }
 
   // FALLBACK: OpenStreetMap Nominatim API
@@ -86,7 +110,6 @@ export async function searchGooglePlaces(query: string): Promise<GeocodingResult
       query
     )}&format=json&limit=5&countrycodes=ph`;
     
-    // User-Agent is requested by Nominatim Usage Policy to avoid rate limit bans
     const response = await fetch(url, {
       headers: {
         'Accept-Language': 'en',
@@ -109,5 +132,48 @@ export async function searchGooglePlaces(query: string): Promise<GeocodingResult
   } catch (error) {
     console.error('[Geocoding Fallback Failed] Nominatim search failed:', error);
     return [];
+  }
+}
+
+/**
+ * Lazy-fetches coordinates for a single chosen place ID.
+ * 
+ * WHY PLACE (NEW) DETAILS:
+ * Requests coordinates using the new Google Place class and limits fields to location
+ * to keep usage pricing within free quota limits.
+ * 
+ * @param {string} placeId - The selected Google Place UUID.
+ * @param {any} sessionToken - The active AutocompleteSessionToken.
+ * @returns {Promise<{ lat: number, lng: number } | null>} Coords payload.
+ */
+export async function getPlaceDetails(
+  placeId: string,
+  sessionToken?: any
+): Promise<{ lat: number; lng: number } | null> {
+  const hasGoogleSDK = typeof window !== 'undefined' && (window as any).google?.maps;
+  if (!hasGoogleSDK) {
+    return null;
+  }
+
+  try {
+    const { Place } = await (window as any).google.maps.importLibrary("places");
+    const place = new Place({ id: placeId });
+    
+    await place.fetchFields({
+      fields: ['location'],
+      sessionToken,
+    });
+
+    if (!place.location) {
+      return null;
+    }
+
+    return {
+      lat: place.location.lat(),
+      lng: place.location.lng(),
+    };
+  } catch (err) {
+    console.error('[Google Details Query Failed]:', err);
+    return null;
   }
 }

@@ -5,6 +5,7 @@ const envSchema = z.object({
   VITE_SUPABASE_ANON_KEY: z.string().min(1, 'VITE_SUPABASE_ANON_KEY must not be empty'),
   VITE_SUPABASE_PUBLISHABLE_KEY: z.string().min(1, 'VITE_SUPABASE_PUBLISHABLE_KEY must not be empty'),
   VITE_ENFORCE_GEOFENCE: z.preprocess((val) => val === 'true', z.boolean()).default(false),
+  VITE_GOOGLE_PLACES_API_KEY: z.string().min(1, 'VITE_GOOGLE_PLACES_API_KEY must not be empty'),
 });
 
 const parseEnv = () => {
@@ -13,6 +14,7 @@ const parseEnv = () => {
     VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY,
     VITE_SUPABASE_PUBLISHABLE_KEY: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     VITE_ENFORCE_GEOFENCE: import.meta.env.VITE_ENFORCE_GEOFENCE,
+    VITE_GOOGLE_PLACES_API_KEY: import.meta.env.VITE_GOOGLE_PLACES_API_KEY,
   });
 
   if (!result.success) {
