@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../api/supabase-client';
 import { getPendingReports, deletePendingReport, type PendingReport } from './outbox-db';
+import { getDeviceId } from '../utils/device-id';
 
 /**
  * Monitors connection changes and automatically pushes queued offline contributions
@@ -44,6 +45,27 @@ export function useOutboxSync() {
 
     setIsSyncing(true);
     setSyncStatus(`Syncing ${unsynced.length} pending report${unsynced.length > 1 ? 's' : ''}... 🐾`);
+
+    // Ensure the device is registered in the database before replaying contributions.
+    // This prevents 409 foreign key violations if the device ID was generated while offline.
+    try {
+      const deviceId = getDeviceId();
+      const { error: deviceError } = await supabase
+        .from('devices')
+        .upsert({ device_id: deviceId }, { onConflict: 'device_id' });
+
+      if (deviceError) {
+        console.error('[Outbox Sync] Failed to ensure device registration:', deviceError);
+        setIsSyncing(false);
+        setSyncStatus(null);
+        return;
+      }
+    } catch (deviceExc) {
+      console.error('[Outbox Sync] Exception during device registration check:', deviceExc);
+      setIsSyncing(false);
+      setSyncStatus(null);
+      return;
+    }
 
     let succeededCount = 0;
 
