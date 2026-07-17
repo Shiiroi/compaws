@@ -14,6 +14,7 @@ import {
 } from '../features/places';
 import { useReportsForPlace, ReportForm, FlagButton } from '../features/reports';
 import { NicknamePrompt } from '../features/devices';
+import { useOutboxSync } from '../shared/outbox/use-outbox-sync';
 import { type PlaceInBounds, type MapBounds } from '../shared/types/geo';
 import { theme } from '../shared/styles/theme';
 import { env } from '../config/env';
@@ -38,6 +39,9 @@ const HomePage: React.FC = () => {
 
   const queryClient = useQueryClient();
   const listRef = useRef<HTMLDivElement>(null);
+
+  // Synchronize outbox queue from IndexedDB to remote Supabase database on network recovery
+  const { syncStatus } = useOutboxSync();
 
   // Fetch pet-friendly locations within active viewport bounding box
   const { data: places = [] } = usePlacesInBounds(bounds);
@@ -347,6 +351,31 @@ const HomePage: React.FC = () => {
         onClose={() => setShowNicknamePrompt(false)}
         onSubmitNickname={handleNicknameSubmit}
       />
+
+      {/* 6. Sync status toast indicator */}
+      {syncStatus && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            backgroundColor: theme.colors.terracotta,
+            color: '#ffffff',
+            padding: '12px 20px',
+            borderRadius: '50px',
+            boxShadow: '0 8px 20px rgba(224, 122, 95, 0.3)',
+            zIndex: 3000,
+            fontSize: '13px',
+            fontWeight: 600,
+            fontFamily: theme.fonts.body,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <span>{syncStatus}</span>
+        </div>
+      )}
 
       {/* TODO: Quezon city directory etc. is deferred to the next seed phases */}
     </div>

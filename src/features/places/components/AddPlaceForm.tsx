@@ -3,6 +3,7 @@ import { supabase } from '../../../shared/api/supabase-client';
 import { getDeviceId } from '../../../shared/utils/device-id';
 import { getCurrentPosition } from '../../../shared/utils/geofence';
 import { uuidv4 } from '../../../shared/utils/uuid';
+import { addPendingReport } from '../../../shared/outbox/outbox-db';
 import { PlaceSearchBar } from './PlaceSearchBar';
 import { getPlaceDetails } from '../api/search-google-places';
 
@@ -108,9 +109,10 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
     setIsSubmitting(true);
     setErrorMsg(null);
 
+    let resolvedLat = 0;
+    let resolvedLng = 0;
+
     try {
-      let resolvedLat = 0;
-      let resolvedLng = 0;
       const enforce = import.meta.env.VITE_ENFORCE_GEOFENCE === 'true';
 
       if (enforce) {
@@ -172,6 +174,30 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
       onSuccess();
       onClose();
     } catch (err: any) {
+      if (err instanceof Error && (err.message.includes('fetch') || err.message.includes('NetworkError'))) {
+        try {
+          await addPendingReport('place', {
+            p_name: selectedPlace.name,
+            p_address: selectedPlace.address,
+            p_city: city.trim(),
+            p_province: '',
+            p_category: category,
+            p_latitude: resolvedLat,
+            p_longitude: resolvedLng,
+            p_device_id: getDeviceId(),
+            p_claim: claim,
+            p_notes: notes.trim(),
+          });
+          alert("Network failure. Saved! We'll register this place once you're back online. 🐾");
+          triggerNicknamePromptFlow();
+          onSuccess();
+          onClose();
+          return;
+        } catch (dbErr) {
+          setErrorMsg('Failed to cache spot offline: ' + (dbErr as Error).message);
+          return;
+        }
+      }
       setErrorMsg(err.message || 'An error occurred while creating this place.');
     } finally {
       setIsSubmitting(false);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '../../../shared/api/supabase-client';
 import { getDeviceId } from '../../../shared/utils/device-id';
 import { checkGeofence } from '../../../shared/utils/geofence';
+import { addPendingReport } from '../../../shared/outbox/outbox-db';
 
 interface FlagButtonProps {
   place: { id: string; name: string; latitude: number; longitude: number };
@@ -52,6 +53,23 @@ export const FlagButton: React.FC<FlagButtonProps> = ({
       triggerNicknamePromptFlow();
       onSuccess();
     } catch (err: any) {
+      if (err instanceof Error && (err.message.includes('fetch') || err.message.includes('NetworkError'))) {
+        try {
+          await addPendingReport('flag', {
+            place_id: place.id,
+            device_id: getDeviceId(),
+            reason,
+          });
+          alert("Network failure. Flag saved! We'll submit your flag when you're back online. 🐾");
+          setIsOpen(false);
+          triggerNicknamePromptFlow();
+          onSuccess();
+          return;
+        } catch (dbErr) {
+          setErrorMsg('Failed to cache flag offline: ' + (dbErr as Error).message);
+          return;
+        }
+      }
       setErrorMsg(err.message || 'An error occurred while submitting flag.');
     } finally {
       setIsSubmitting(false);

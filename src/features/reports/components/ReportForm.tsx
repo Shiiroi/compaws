@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '../../../shared/api/supabase-client';
 import { getDeviceId } from '../../../shared/utils/device-id';
 import { checkGeofence } from '../../../shared/utils/geofence';
-import { addPendingReport } from '../outbox/outbox-db';
+import { addPendingReport } from '../../../shared/outbox/outbox-db';
 import { reportSchema } from '../schemas/report-schema';
 
 interface ReportFormProps {
@@ -60,7 +60,7 @@ export const ReportForm: React.FC<ReportFormProps> = ({
 
       // 2. Handle offline caching or online insert
       if (!navigator.onLine) {
-        await addPendingReport(payload);
+        await addPendingReport('report', payload);
         alert("Offline status detected. Saved! We'll submit your report when you're back online. 🐾");
         triggerNicknamePromptFlow();
         onSuccess();
@@ -78,7 +78,7 @@ export const ReportForm: React.FC<ReportFormProps> = ({
       // Handle network offline errors gracefully via local IndexedDB fallback
       if (err instanceof Error && (err.message.includes('fetch') || err.message.includes('NetworkError'))) {
         try {
-          await addPendingReport({
+          await addPendingReport('report', {
             place_id: place.id,
             device_id: getDeviceId(),
             claim,

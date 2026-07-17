@@ -1,16 +1,23 @@
-import { uuidv4 } from '../../../shared/utils/uuid';
+import { uuidv4 } from '../utils/uuid';
 
 /**
- * Represents a report stored locally while the client is offline.
+ * Represents an offline contribution queued in IndexedDB for remote synchronization.
+ * Supports multiple payload schemas distinguished by the 'type' field.
  */
 export interface PendingReport {
-  /** Unique identifier for the local record (UUID). */
+  /** Unique ID key for this outbox database entry. */
   id: string;
-  /** The report payload (JSON object containing claim notes, place ID, device ID, etc.). */
+  /** Discriminator categorizing the target table/endpoint:
+   * - 'report': policy updates on existing places
+   * - 'place': new places with their initial policy report
+   * - 'flag': flag moderation reports
+   */
+  type: 'report' | 'place' | 'flag';
+  /** Raw query parameters matching their respective API call structure. */
   payload: any;
-  /** ISO timestamp recording when the report was created locally. */
+  /** ISO timestamp recording when the record was cached locally. */
   created_at: string;
-  /** Synchronization flag indicating whether this record has been synced to Supabase. */
+  /** Synchronization flag. Defaults to false. */
   synced: boolean;
 }
 
@@ -19,8 +26,8 @@ const DB_VERSION = 1;
 const STORE_NAME = 'pending-reports';
 
 /**
- * Helper function to open or upgrade the connection to the IndexedDB database.
- * Resolves with the IDBDatabase connection on success.
+ * Opens a connection to the IndexedDB outbox database, creating the store on first run.
+ * Resolves with the connection instance.
  */
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -31,7 +38,6 @@ function openDB(): Promise<IDBDatabase> {
 
     request.onupgradeneeded = () => {
       const db = request.result;
-      // Initialize object store if it does not already exist
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME, { keyPath: 'id' });
       }
@@ -40,16 +46,21 @@ function openDB(): Promise<IDBDatabase> {
 }
 
 /**
- * Saves a new pending report in the local IndexedDB outbox.
- * Useful for caching submissions while offline.
+ * Queues a contribution payload into the local outbox IndexedDB.
  * 
- * @param {any} payload - The report data to be submitted once online.
- * @returns {Promise<PendingReport>} Resolves with the full locally-saved report object.
+ * WHY:
+ * This acts as our persistent write-buffer. If a user submits data while in a dead-zone,
+ * this function captures it so the user doesn't lose their inputs when closing the browser tab.
+ * 
+ * @param {'report' | 'place' | 'flag'} type - Payload schema discriminator.
+ * @param {any} payload - The contribution parameters.
+ * @returns {Promise<PendingReport>} The locally cached outbox record.
  */
-export async function addPendingReport(payload: any): Promise<PendingReport> {
+export async function addPendingReport(type: 'report' | 'place' | 'flag', payload: any): Promise<PendingReport> {
   const db = await openDB();
   const report: PendingReport = {
     id: uuidv4(),
+    type,
     payload,
     created_at: new Date().toISOString(),
     synced: false,
@@ -66,9 +77,9 @@ export async function addPendingReport(payload: any): Promise<PendingReport> {
 }
 
 /**
- * Retrieves all pending reports currently stored in the local outbox.
+ * Retrieves all pending outbox entries in IndexedDB.
  * 
- * @returns {Promise<PendingReport[]>} Array of all cached pending reports.
+ * @returns {Promise<PendingReport[]>} Array of cached reports.
  */
 export async function getPendingReports(): Promise<PendingReport[]> {
   const db = await openDB();
@@ -83,9 +94,9 @@ export async function getPendingReports(): Promise<PendingReport[]> {
 }
 
 /**
- * Marks a specific local pending report as successfully synchronized.
+ * Marks a queued outbox item as synced (useful if preserving log details locally).
  * 
- * @param {string} id - The UUID of the pending report.
+ * @param {string} id - The UUID of the outbox record.
  */
 export async function markReportSynced(id: string): Promise<void> {
   const db = await openDB();
@@ -110,9 +121,13 @@ export async function markReportSynced(id: string): Promise<void> {
 }
 
 /**
- * Deletes a synchronized or obsolete report from the local outbox.
+ * Deletes a synchronized or discarded contribution from the local outbox.
  * 
- * @param {string} id - The UUID of the pending report.
+ * WHY DELETE IMMEDIATELY:
+ * To avoid unbounded storage footprint on the user's browser, we clean up
+ * and purge entries immediately once they are verified on the remote Supabase database.
+ * 
+ * @param {string} id - The UUID of the outbox record.
  */
 export async function deletePendingReport(id: string): Promise<void> {
   const db = await openDB();
