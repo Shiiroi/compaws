@@ -90,8 +90,11 @@ export const NicknamePrompt: React.FC<NicknamePromptProps> = ({
         >
           Thank you for your contribution!
         </h3>
-        <p style={{ fontSize: '14px', color: theme.colors.textMuted, margin: '0 0 24px 0', lineHeight: '1.5' }}>
+        <p style={{ fontSize: '14px', color: theme.colors.textMuted, margin: '0 0 12px 0', lineHeight: '1.5' }}>
           Want a name to go with your contributions? You can set an optional nickname for this device.
+        </p>
+        <p style={{ fontSize: '11px', color: theme.colors.textMuted, margin: '0 0 20px 0', fontStyle: 'italic', lineHeight: '1.4' }}>
+          (Optional: This nickname will be shown publicly next to your spot contributions and updates. No login required! 🐾)
         </p>
 
         <form onSubmit={handleSubmit}>
