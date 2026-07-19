@@ -430,6 +430,8 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
                 padding: '10px',
                 borderRadius: '8px',
                 border: '1px solid #ccc',
+                backgroundColor: '#ffffff',
+                color: '#1f2937',
                 fontSize: '14px',
                 boxSizing: 'border-box',
                 resize: 'vertical',
