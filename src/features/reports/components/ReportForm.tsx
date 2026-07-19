@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../../shared/api/supabase-client';
 import { getDeviceId } from '../../../shared/utils/device-id';
-import { checkGeofence } from '../../../shared/utils/geofence';
 import { addPendingReport } from '../../../shared/outbox/outbox-db';
 import { reportSchema } from '../schemas/report-schema';
 
@@ -44,12 +43,6 @@ export const ReportForm: React.FC<ReportFormProps> = ({
     }
 
     try {
-      // 1. Run geofencing check
-      const isNear = await checkGeofence(place.latitude, place.longitude);
-      if (!isNear) {
-        throw new Error('Geofence verification failed. You must be physically present at the location to submit a report! 🐾');
-      }
-
       const deviceId = getDeviceId();
       const payload = {
         place_id: place.id,

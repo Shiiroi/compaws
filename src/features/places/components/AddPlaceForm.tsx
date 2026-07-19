@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../../shared/api/supabase-client';
 import { getDeviceId } from '../../../shared/utils/device-id';
-import { getCurrentPosition } from '../../../shared/utils/geofence';
 import { uuidv4 } from '../../../shared/utils/uuid';
 import { addPendingReport } from '../../../shared/outbox/outbox-db';
 import { PlaceSearchBar } from './PlaceSearchBar';
@@ -113,43 +112,19 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
     let resolvedLng = 0;
 
     try {
-      const enforce = import.meta.env.VITE_ENFORCE_GEOFENCE === 'true';
-
-      if (enforce) {
-        // Enforced production state: Require physical presence coordinates verified by GPS
-        try {
-          const { latitude, longitude } = await getCurrentPosition();
-          resolvedLat = latitude;
-          resolvedLng = longitude;
-        } catch (cause) {
-          throw new Error(
-            'Geofence enforcement active: You must enable active GPS location services and be present at the venue to register new places.',
-            { cause }
-          );
-        }
+      // Prioritize using coordinates already resolved during search
+      if (selectedPlace.lat !== undefined && selectedPlace.lng !== undefined) {
+        resolvedLat = selectedPlace.lat;
+        resolvedLng = selectedPlace.lng;
       } else {
-        // Developer seeding state: Prioritize using coordinates already resolved during search
-        if (selectedPlace.lat !== undefined && selectedPlace.lng !== undefined) {
-          resolvedLat = selectedPlace.lat;
-          resolvedLng = selectedPlace.lng;
+        // Lazy resolve Google Place details coordinates as fallback
+        const details = await getPlaceDetails(selectedPlace.id);
+        if (details) {
+          resolvedLat = details.lat;
+          resolvedLng = details.lng;
         } else {
-          // Lazy resolve Google Place details coordinates as fallback
-          const details = await getPlaceDetails(selectedPlace.id);
-          if (details) {
-            resolvedLat = details.lat;
-            resolvedLng = details.lng;
-          } else {
-            // Last resort: try browser GPS
-            try {
-              const { latitude, longitude } = await getCurrentPosition();
-              resolvedLat = latitude;
-              resolvedLng = longitude;
-            } catch (cause) {
-              throw new Error('Coordinates could not be resolved. Please enable location services.', { cause });
-            }
-          }
+          throw new Error('Coordinates could not be resolved. Please search and select a valid location.');
         }
-        console.warn(`[Add Place Skip GPS] Geofencing is off. Using search coordinates: (${resolvedLat}, ${resolvedLng}) directly.`);
       }
 
       // 4. Submit transactional RPC inserting place and initial report together
@@ -335,16 +310,13 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
               <input
                 type="text"
                 value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="e.g. Quezon City"
-                required
+                disabled
                 style={{
                   width: '100%',
                   padding: '10px',
                   borderRadius: '8px',
-                  border: '1px solid #ccc',
-                  backgroundColor: '#ffffff',
-                  color: '#1f2937',
+                  border: '1px solid #ddd',
+                  backgroundColor: '#f3f4f6',
                   fontSize: '14px',
                   boxSizing: 'border-box',
                 }}
