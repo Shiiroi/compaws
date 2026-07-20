@@ -1,7 +1,10 @@
 import React from 'react';
+import { FaBone } from 'react-icons/fa';
 import { theme } from '../../../shared/styles/theme';
 import { type PlaceInBounds, type ReportItem } from '../../../shared/types/geo';
 import { getDeviceId } from '../../../shared/utils/device-id';
+import { getConfidenceStyle } from '../../../shared/utils/confidence-color';
+import { StatusCard } from '../../../shared/components/StatusCard';
 
 interface PlaceDetailProps {
   /** The selected place record data. Can be a DB place or a temporary geocoded ghost place. */
@@ -46,6 +49,24 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
     outdoor_only: 'Outdoor Only',
   };
 
+  const petMenuLabels: Record<string, string> = {
+    yes: 'Has Pet Menu',
+    no: 'No Pet Menu',
+    not_sure: 'Unsure',
+  };
+
+  const priceRangeLabels: Record<string, string> = {
+    budget: 'Budget-Friendly',
+    mid: 'Mid-Range',
+    splurge: 'Splurge-Worthy',
+  };
+
+  const reqLabels: Record<string, string> = {
+    diaper: 'Diapers',
+    caged: 'Caged',
+    stroller: 'Stroller/Carrier',
+  };
+
   const claimColors: Record<string, string> = {
     allowed: theme.colors.allowed,
     not_allowed: theme.colors.notAllowed,
@@ -53,14 +74,6 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
   };
 
   const dbPlace = !isGhost ? (place as PlaceInBounds) : null;
-  const isConfirmed = dbPlace ? dbPlace.agreeing_devices >= 2 && dbPlace.claim !== null : false;
-  const statusLabel = dbPlace
-    ? isConfirmed
-      ? `Confirmed by ${dbPlace.agreeing_devices} contributors`
-      : `Reported by ${dbPlace.agreeing_devices} contributor${
-          dbPlace.agreeing_devices === 1 ? '' : 's'
-        } -- not yet confirmed`
-    : 'Not yet tracked in our directory';
 
   return (
     <div
@@ -84,42 +97,30 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
         boxSizing: 'border-box',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <span
-            style={{
-              fontSize: '10px',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '1px',
-              backgroundColor: theme.colors.softPink,
-              padding: '4px 10px',
-              borderRadius: '8px',
-              color: theme.colors.terracotta,
-              fontFamily: theme.fonts.heading,
-            }}
-          >
-            {isGhost ? 'Untracked Spot' : (dbPlace?.category || 'General')}
-          </span>
-          <h2
-            style={{
-              fontSize: '22px',
-              fontWeight: 700,
-              margin: '12px 0 6px 0',
-              color: theme.colors.textDark,
-              fontFamily: theme.fonts.heading,
-            }}
-          >
-            {place.name}
-          </h2>
-          <p style={{ fontSize: '13px', color: theme.colors.textMuted, margin: '0 0 12px 0' }}>
-            {place.address}
-          </p>
-        </div>
+      {/* Category Tag & Close button row */}
+      <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '12px' }}>
+        <span
+          style={{
+            fontSize: '10px',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            backgroundColor: theme.colors.softPink,
+            padding: '4px 10px',
+            borderRadius: '8px',
+            color: theme.colors.terracotta,
+            fontFamily: theme.fonts.heading,
+            display: 'inline-block',
+          }}
+        >
+          {isGhost ? 'Untracked Spot' : (dbPlace?.category || 'General')}
+        </span>
         <button
           onClick={onClose}
           aria-label="Close panel"
           style={{
+            position: 'absolute',
+            right: 0,
             background: '#f3f4f6',
             border: 'none',
             borderRadius: '50%',
@@ -134,11 +135,28 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
             boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
             padding: 0,
             lineHeight: 1,
-            flexShrink: 0,
           }}
         >
           &times;
         </button>
+      </div>
+
+      {/* Main Place Header Details */}
+      <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+        <h2
+          style={{
+            fontSize: '22px',
+            fontWeight: 700,
+            margin: '0 0 6px 0',
+            color: theme.colors.textDark,
+            fontFamily: theme.fonts.heading,
+          }}
+        >
+          {place.name}
+        </h2>
+        <p style={{ fontSize: '13px', color: theme.colors.textMuted, margin: '0' }}>
+          {place.address}
+        </p>
       </div>
 
       {isGhost ? (
@@ -172,36 +190,250 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
             style={{
               borderTop: `1px solid ${theme.colors.borderLight}`,
               borderBottom: `1px solid ${theme.colors.borderLight}`,
-              padding: '14px 0',
-              margin: '14px 0',
+              padding: '16px 0',
+              margin: '16px 0',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-              <div
-                style={{
-                  width: '10px',
-                  height: '10px',
-                  borderRadius: '50%',
-                  backgroundColor: dbPlace?.claim ? claimColors[dbPlace.claim] : theme.colors.unconfirmed,
-                }}
-              />
-              <span style={{ fontWeight: 600, fontSize: '15px' }}>
-                Policy: {dbPlace?.claim ? claimLabels[dbPlace.claim] : 'No policy reports'}
-              </span>
-            </div>
-            <span
+            <h3
               style={{
-                fontSize: '12px',
-                color: isConfirmed ? '#059669' : '#b45309',
-                backgroundColor: isConfirmed ? '#ecfdf5' : '#fffbeb',
-                padding: '4px 8px',
-                borderRadius: '6px',
-                fontWeight: 500,
-                display: 'inline-block',
+                fontSize: '11px',
+                fontWeight: 700,
+                margin: '0 0 12px 0',
+                color: theme.colors.textMuted,
+                fontFamily: theme.fonts.heading,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
               }}
             >
-              {statusLabel}
-            </span>
+              Current Status
+            </h3>
+
+            {dbPlace && (() => {
+              // 1. Primary Policy Badge (Highest visual priority)
+              const policyDisputed = dbPlace.runner_up_agreeing_devices >= 2 &&
+                (dbPlace.agreeing_devices - dbPlace.runner_up_agreeing_devices) <= 1;
+              const policyConfirmed = dbPlace.agreeing_devices >= 2 && dbPlace.claim !== null && !policyDisputed;
+              const policyStyle = getConfidenceStyle('policy', dbPlace.claim, dbPlace.agreeing_devices, dbPlace.runner_up_agreeing_devices);
+
+              // WHY NAMED CONFLICT LABEL:
+              // A plain "Policy: Allowed" would be actively misleading when the vote is close.
+              // Naming both options lets the reader understand why they see ⚠️ rather than a normal label.
+              const policyLabel = policyDisputed && dbPlace.claim && dbPlace.runner_up_claim
+                ? `${claimLabels[dbPlace.claim]} vs ${claimLabels[dbPlace.runner_up_claim]}`
+                : (dbPlace.claim ? claimLabels[dbPlace.claim] : 'No policy reports');
+
+              const policyMicrocopy = policyDisputed && dbPlace.claim
+                ? `⚠️ Contradictory reports (${dbPlace.agreeing_devices} vs ${dbPlace.runner_up_agreeing_devices})`
+                : dbPlace.claim
+                  ? policyConfirmed
+                    ? `Confirmed by ${dbPlace.agreeing_devices} contributors`
+                    : `Reported by ${dbPlace.agreeing_devices} contributor${dbPlace.agreeing_devices === 1 ? '' : 's'} -- not yet confirmed`
+                  : 'No reports yet';
+
+              const getPriceValueColor = (val: string | null) => {
+                if (val === 'budget') return '#2E7D32';
+                if (val === 'mid') return '#EF6C00';
+                if (val === 'splurge') return '#C62828';
+                return theme.colors.textMuted;
+              };
+
+              const getPriceValueIcon = (val: string | null) => {
+                if (val === 'budget') return '🐾';
+                if (val === 'mid') return '🐾🐾';
+                if (val === 'splurge') return '🐾🐾🐾';
+                return null;
+              };
+
+              const getMenuValueColor = (val: string | null) => {
+                if (val === 'yes') return '#2E7D32';
+                if (val === 'no') return '#C62828';
+                if (val === 'not_sure') return '#718096';
+                return theme.colors.textMuted;
+              };
+
+              const getMenuValueIcon = (val: string | null) => {
+                if (val === 'yes') return <FaBone />;
+                if (val === 'no') return '❌';
+                if (val === 'not_sure') return '❓';
+                return null;
+              };
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {/* Primary Policy Banner */}
+                  <div
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: '10px',
+                      backgroundColor: policyStyle.backgroundColor,
+                      border: `2px ${policyStyle.borderStyle} ${policyStyle.borderColor}`,
+                      boxShadow: policyStyle.isSolid ? '0 4px 12px rgba(0,0,0,0.08)' : 'none',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          color: policyStyle.isSolid ? 'rgba(255,255,255,0.9)' : theme.colors.textMuted,
+                        }}
+                      >
+                        PET POLICY
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: '18px',
+                        fontWeight: 800,
+                        color: policyStyle.textColor,
+                      }}
+                    >
+                      {policyLabel}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        color: policyDisputed
+                          ? '#d97706'
+                          : (policyStyle.isSolid ? 'rgba(255,255,255,0.9)' : theme.colors.textMuted),
+                      }}
+                    >
+                      {policyMicrocopy}
+                    </span>
+                  </div>
+
+                  {/* Warm dispute helper — only shown when policy is actively contested */}
+                  {policyDisputed && (
+                    <p
+                      style={{
+                        fontSize: '11px',
+                        color: '#92400e',
+                        margin: '0',
+                        fontStyle: 'italic',
+                        lineHeight: '1.5',
+                      }}
+                    >
+                      Contributors disagree -- help clarify by reporting what you know. 🐾
+                    </p>
+                  )}
+
+                  {/* Details section */}
+                  <div style={{ marginTop: '4px', borderTop: `1px solid ${theme.colors.borderLight}`, paddingTop: '16px' }}>
+                    <h4
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        margin: '0 0 12px 0',
+                        color: theme.colors.textMuted,
+                        fontFamily: theme.fonts.heading,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                      }}
+                    >
+                      Details
+                    </h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {(() => {
+                        // Gather list of reported requirements with count of contributor tags
+                        const getRequirementsList = () => {
+                          if (!reports || reports.length === 0) return { predefined: [], custom: [] };
+                          const seenDevices = new Set<string>();
+                          const uniqueReports = reports.filter((r) => {
+                            if (seenDevices.has(r.device_id)) return false;
+                            seenDevices.add(r.device_id);
+                            return true;
+                          });
+
+                          const predefinedCounts: Record<string, number> = {};
+
+                          uniqueReports.forEach((r) => {
+                            if (!r.notes) return;
+                            const parts = r.notes.split(',').map((p) => p.trim());
+                            parts.forEach((part) => {
+                              if (part === 'diaper' || part === 'caged' || part === 'stroller') {
+                                predefinedCounts[part] = (predefinedCounts[part] || 0) + 1;
+                              } else if (part && part !== 'none') {
+                                // ignore unknown/legacy values silently
+                              }
+                            });
+                          });
+
+                          return {
+                            predefined: Object.entries(predefinedCounts).map(([key, count]) => ({ key, count })),
+                          };
+                        };
+
+                        const reqData = getRequirementsList();
+                        const hasReqs = reqData.predefined.length > 0;
+
+                        return (
+                          <>
+                            {/* Price Range Card */}
+                            <StatusCard
+                              label="Price Range"
+                              value={dbPlace.price_range ? priceRangeLabels[dbPlace.price_range] : null}
+                              emptyText="No price reports"
+                              valueColor={getPriceValueColor(dbPlace.price_range)}
+                              valueIcon={getPriceValueIcon(dbPlace.price_range)}
+                              agreeingDevices={dbPlace.price_range_agreeing_devices}
+                              runnerUpAgreeingDevices={dbPlace.price_range_runner_up_agreeing_devices}
+                            />
+
+                            {/* Pet Menu Card */}
+                            <StatusCard
+                              label="Pet Menu"
+                              value={dbPlace.pet_menu ? petMenuLabels[dbPlace.pet_menu] : null}
+                              emptyText="No pet menu reports"
+                              valueColor={getMenuValueColor(dbPlace.pet_menu)}
+                              valueIcon={getMenuValueIcon(dbPlace.pet_menu)}
+                              agreeingDevices={dbPlace.pet_menu_agreeing_devices}
+                              runnerUpAgreeingDevices={dbPlace.pet_menu_runner_up_agreeing_devices}
+                            />
+
+                            {/* Pet Requirements Card — no overall confidence pill, wraps badges directly underneath the label */}
+                            <StatusCard
+                              label="Pet Requirements"
+                              value={null}
+                              emptyText="No requirements reported yet"
+                              agreeingDevices={0}
+                              hideConfidencePill
+                            >
+                              {hasReqs ? (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px', width: '100%' }}>
+                                  {reqData.predefined.map(({ key, count }) => (
+                                    <span
+                                      key={key}
+                                      style={{
+                                        fontSize: '10px',
+                                        color: theme.colors.textDark,
+                                        backgroundColor: '#f1f5f9',
+                                        padding: '3px 8px',
+                                        borderRadius: '4px',
+                                        fontWeight: 500,
+                                        border: '1px solid #e2e8f0',
+                                        textAlign: 'left',
+                                      }}
+                                    >
+                                      {reqLabels[key] ?? key} ({count})
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : null}
+                            </StatusCard>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           <h3 style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 10px 0', color: theme.colors.textDark, fontFamily: theme.fonts.heading }}>
@@ -232,6 +464,28 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
 
                   return uniqueReports.map((report, idx) => {
                     const isOwnReport = report.device_id === getDeviceId();
+
+                    // Parse requirements note
+                    const reqLabelsList: string[] = [];
+
+                    if (report.notes) {
+                      const parts = report.notes.split(',').map((p) => p.trim());
+                      parts.forEach((part) => {
+                        if (part === 'diaper') {
+                          reqLabelsList.push('Diapers');
+                        } else if (part === 'caged') {
+                          reqLabelsList.push('Caged');
+                        } else if (part === 'stroller') {
+                          reqLabelsList.push('Stroller/Carrier');
+                        } else if (part === 'none') {
+                          reqLabelsList.push('None (Free Roam)');
+                        }
+                        // other: prefix and unknown values are silently ignored
+                      });
+                    }
+
+
+
                     return (
                       <li
                         key={idx}
@@ -241,8 +495,8 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                           backgroundColor: theme.colors.background,
                           marginBottom: '8px',
                           fontSize: '12px',
-                          borderLeft: `4px solid ${claimColors[report.claim]}`,
                           border: `1px solid ${theme.colors.borderLight}`,
+                          borderLeft: `4px solid ${claimColors[report.claim]}`,
                         }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
@@ -253,14 +507,47 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                             {new Date(report.created_at).toLocaleDateString()}
                           </span>
                         </div>
-                        <div style={{ fontSize: '10px', color: theme.colors.textMuted, marginBottom: '6px' }}>
-                          by {isOwnReport ? 'You' : (report.nickname || 'Guest Contributor')}
+                        {/* Price & menu info badges */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                          {report.price_range && (
+                            <span style={{ fontSize: '10px', color: theme.colors.textDark, backgroundColor: '#f1f5f9', padding: '3px 8px', borderRadius: '4px', fontWeight: 500, border: '1px solid #e2e8f0' }}>
+                              Pricing: {priceRangeLabels[report.price_range]}
+                            </span>
+                          )}
+                          {report.pet_menu && (
+                            <span style={{ fontSize: '10px', color: theme.colors.textDark, backgroundColor: '#f1f5f9', padding: '3px 8px', borderRadius: '4px', fontWeight: 500, border: '1px solid #e2e8f0' }}>
+                              Menu: {petMenuLabels[report.pet_menu]}
+                            </span>
+                          )}
                         </div>
-                        {report.notes && (
-                          <p style={{ color: theme.colors.textDark, margin: 0, fontStyle: 'italic' }}>
-                            "{report.notes}"
-                          </p>
+                        {/* Requirement pills — each requirement gets its own badge.
+                          * WHY: jamming comma-separated values into one badge loses readability
+                          * and makes it impossible to visually distinguish individual requirements. */}
+                        {reqLabelsList.length > 0 && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px', marginBottom: '6px' }}>
+                            {reqLabelsList.map((label) => (
+                              <span
+                                key={label}
+                                style={{
+                                  fontSize: '10px',
+                                  color: theme.colors.textDark,
+                                  backgroundColor: '#f1f5f9',
+                                  padding: '3px 8px',
+                                  borderRadius: '4px',
+                                  fontWeight: 500,
+                                  border: '1px solid #e2e8f0',
+                                }}
+                              >
+                                Req: {label}
+                              </span>
+                            ))}
+                          </div>
                         )}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+                          <span style={{ fontSize: '10px', color: theme.colors.textMuted }}>
+                            by {isOwnReport ? 'You' : (report.nickname || 'Guest Contributor')}
+                          </span>
+                        </div>
                       </li>
                     );
                   });

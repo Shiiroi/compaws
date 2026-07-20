@@ -88,6 +88,8 @@ export function useOutboxSync() {
             p_longitude: entry.payload.p_longitude,
             p_device_id: entry.payload.p_device_id,
             p_claim: entry.payload.p_claim,
+            p_pet_menu: entry.payload.p_pet_menu,
+            p_price_range: entry.payload.p_price_range,
             p_notes: entry.payload.p_notes,
           });
           error = res.error;

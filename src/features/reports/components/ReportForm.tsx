@@ -25,7 +25,12 @@ export const ReportForm: React.FC<ReportFormProps> = ({
   onTriggerNicknamePrompt,
 }) => {
   const [claim, setClaim] = useState<'allowed' | 'not_allowed' | 'outdoor_only'>('allowed');
-  const [notes, setNotes] = useState('');
+  const [petMenu, setPetMenu] = useState<'yes' | 'no' | 'unsure'>('unsure');
+  const [priceRange, setPriceRange] = useState<'budget' | 'mid' | 'splurge'>('mid');
+  const [reqDiaper, setReqDiaper] = useState(true);
+  const [reqCaged, setReqCaged] = useState(false);
+  const [reqStroller, setReqStroller] = useState(false);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -34,8 +39,18 @@ export const ReportForm: React.FC<ReportFormProps> = ({
     setIsSubmitting(true);
     setErrorMsg(null);
 
+    const reqs: string[] = [];
+    if (reqDiaper) reqs.push('diaper');
+    if (reqCaged) reqs.push('caged');
+    if (reqStroller) reqs.push('stroller');
+
+    const formattedRequirements = reqs.join(', ');
+
+    // Map UI petMenu 'unsure' to database value 'not_sure'
+    const dbPetMenu = petMenu === 'unsure' ? 'not_sure' : petMenu;
+
     // Validate inputs using Zod
-    const validation = reportSchema.safeParse({ claim, notes });
+    const validation = reportSchema.safeParse({ claim, pet_menu: dbPetMenu, price_range: priceRange, notes: formattedRequirements });
     if (!validation.success) {
       setErrorMsg(validation.error.issues[0].message);
       setIsSubmitting(false);
@@ -48,7 +63,9 @@ export const ReportForm: React.FC<ReportFormProps> = ({
         place_id: place.id,
         device_id: deviceId,
         claim,
-        notes: notes.trim() || null,
+        pet_menu: dbPetMenu,
+        price_range: priceRange,
+        notes: formattedRequirements,
       };
 
       // 2. Handle offline caching or online insert
@@ -61,7 +78,7 @@ export const ReportForm: React.FC<ReportFormProps> = ({
         return;
       }
 
-      const { error } = await supabase.from('pet_policy_reports').insert(payload);
+      const { error } = await supabase.from('pet_policy_reports').insert(payload as any);
       if (error) throw error;
 
       triggerNicknamePromptFlow();
@@ -75,18 +92,21 @@ export const ReportForm: React.FC<ReportFormProps> = ({
             place_id: place.id,
             device_id: getDeviceId(),
             claim,
-            notes: notes.trim() || null,
+            pet_menu: dbPetMenu,
+            price_range: priceRange,
+            notes: formattedRequirements,
           });
           alert("Network failure. Saved! We'll submit your report when you're back online. 🐾");
           triggerNicknamePromptFlow();
           onSuccess();
           onClose();
+          return;
         } catch (dbErr) {
           setErrorMsg('Failed to cache report offline: ' + (dbErr as Error).message);
+          return;
         }
-      } else {
-        setErrorMsg(err.message || 'An error occurred during submission.');
       }
+      setErrorMsg(err.message || 'An error occurred while submitting your report.');
     } finally {
       setIsSubmitting(false);
     }
@@ -160,28 +180,114 @@ export const ReportForm: React.FC<ReportFormProps> = ({
           </div>
         </div>
 
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', fontWeight: 600, marginBottom: '6px', fontSize: '14px' }}>
-            Optional Notes / Context
+        <div style={{ marginBottom: '16px', borderTop: '1px solid #eee', paddingTop: '12px' }}>
+          <label style={{ display: 'block', fontWeight: 600, marginBottom: '8px', fontSize: '14px' }}>
+            Price Range
           </label>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="e.g. Needs diaper inside, or only small dogs allowed..."
-            maxLength={100}
-            rows={3}
-            style={{
-              width: '100%',
-              padding: '10px',
-              borderRadius: '8px',
-              border: '1px solid #ccc',
-              backgroundColor: '#ffffff',
-              color: '#1f2937',
-              fontSize: '14px',
-              boxSizing: 'border-box',
-              resize: 'vertical',
-            }}
-          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
+              <input
+                type="radio"
+                name="priceRange"
+                value="budget"
+                checked={priceRange === 'budget'}
+                onChange={() => setPriceRange('budget')}
+              />
+              Budget-Friendly
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
+              <input
+                type="radio"
+                name="priceRange"
+                value="mid"
+                checked={priceRange === 'mid'}
+                onChange={() => setPriceRange('mid')}
+              />
+              Mid-Range
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
+              <input
+                type="radio"
+                name="priceRange"
+                value="splurge"
+                checked={priceRange === 'splurge'}
+                onChange={() => setPriceRange('splurge')}
+              />
+              Splurge-Worthy
+            </label>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '16px', borderTop: '1px solid #eee', paddingTop: '12px' }}>
+          <label style={{ display: 'block', fontWeight: 600, marginBottom: '8px', fontSize: '14px' }}>
+            Does this place have a pet menu?
+          </label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
+              <input
+                type="radio"
+                name="petMenu"
+                value="yes"
+                checked={petMenu === 'yes'}
+                onChange={() => setPetMenu('yes')}
+              />
+              Yes (Includes pet treats, puppuccinos, or a dedicated menu)
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
+              <input
+                type="radio"
+                name="petMenu"
+                value="no"
+                checked={petMenu === 'no'}
+                onChange={() => setPetMenu('no')}
+              />
+              No (No special food options for pets)
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
+              <input
+                type="radio"
+                name="petMenu"
+                value="unsure"
+                checked={petMenu === 'unsure'}
+                onChange={() => setPetMenu('unsure')}
+              />
+              Unsure
+            </label>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '20px', borderTop: '1px solid #eee', paddingTop: '12px' }}>
+          <label style={{ display: 'block', fontWeight: 600, marginBottom: '8px', fontSize: '14px' }}>
+            Pet Requirements (Select all that apply)
+          </label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
+              <input
+                type="checkbox"
+                checked={reqDiaper}
+                onChange={(e) => setReqDiaper(e.target.checked)}
+              />
+              Diapers
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
+              <input
+                type="checkbox"
+                checked={reqCaged}
+                onChange={(e) => setReqCaged(e.target.checked)}
+              />
+              Caged
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
+              <input
+                type="checkbox"
+                checked={reqStroller}
+                onChange={(e) => setReqStroller(e.target.checked)}
+              />
+              Stroller / Carrier
+            </label>
+          </div>
+
+
         </div>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
