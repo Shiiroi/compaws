@@ -512,12 +512,12 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
                           {report.price_range && (
                             <span style={{ fontSize: '10px', color: theme.colors.textDark, backgroundColor: '#f1f5f9', padding: '3px 8px', borderRadius: '4px', fontWeight: 500, border: '1px solid #e2e8f0' }}>
-                              {priceRangeLabels[report.price_range]}
+                              Pricing: {priceRangeLabels[report.price_range]}
                             </span>
                           )}
                           {report.pet_menu && (
                             <span style={{ fontSize: '10px', color: theme.colors.textDark, backgroundColor: '#f1f5f9', padding: '3px 8px', borderRadius: '4px', fontWeight: 500, border: '1px solid #e2e8f0' }}>
-                              {petMenuLabels[report.pet_menu]}
+                              Menu: {petMenuLabels[report.pet_menu]}
                             </span>
                           )}
                         </div>
@@ -541,7 +541,7 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                                   border: '1px solid #e2e8f0',
                                 }}
                               >
-                                {label}
+                                Req: {label}
                               </span>
                             ))}
                             {customNote && (
