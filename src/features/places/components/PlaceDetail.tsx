@@ -1,9 +1,11 @@
 import React from 'react';
-import { MdOutlineMonetizationOn, MdMenuBook, MdChecklist } from 'react-icons/md';
+import { MdChecklist } from 'react-icons/md';
+import { FaBone } from 'react-icons/fa';
 import { theme } from '../../../shared/styles/theme';
 import { type PlaceInBounds, type ReportItem } from '../../../shared/types/geo';
 import { getDeviceId } from '../../../shared/utils/device-id';
 import { getConfidenceStyle } from '../../../shared/utils/confidence-color';
+import { StatusCard } from '../../../shared/components/StatusCard';
 
 interface PlaceDetailProps {
   /** The selected place record data. Can be a DB place or a temporary geocoded ghost place. */
@@ -219,87 +221,19 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                   : `Reported by ${dbPlace.agreeing_devices} contributor${dbPlace.agreeing_devices === 1 ? '' : 's'} -- not yet confirmed`
                 : 'No reports yet';
 
-              // 2. Helper for Details list items
-              const renderDetailListItem = (
-                type: 'price' | 'menu' | 'policy' | 'req',
-                value: string | null,
-                agreeingDevices: number,
-                labelMap: Record<string, string>,
-                prefixLabel: string,
-                emptyLabel: string,
-                icon: React.ReactNode
-              ) => {
-                const style = getConfidenceStyle(type, value, agreeingDevices);
-                const isConfirmed = agreeingDevices >= 2 && value !== null;
-                const valueLabel = value ? (labelMap[value] ?? value) : emptyLabel;
+              // Icon Chip Colors specific to categories, independent of confidence pill colors
+              const getPriceChipColors = (val: string | null) => {
+                if (val === 'budget') return { bg: '#E8F5E9', fg: '#2E7D32' };
+                if (val === 'mid') return { bg: '#FFF3E0', fg: '#EF6C00' };
+                if (val === 'splurge') return { bg: '#FFEBEE', fg: '#C62828' };
+                return { bg: '#F5F5F5', fg: '#757575' };
+              };
 
-                // Icon box background: for icon itself use a subtle tint, not the full solid color
-                // WHY: On unconfirmed (dashed) rows the card background is white. We still want
-                // the icon box to have a subtle tint matching its category color for visual grouping.
-                const iconBg = style.isSolid ? style.backgroundColor : `${style.borderColor}18`;
-
-                return (
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '10px 12px',
-                      borderRadius: '8px',
-                      backgroundColor: '#ffffff',
-                      border: `1px solid ${theme.colors.borderLight}`,
-                      gap: '8px',
-                    }}
-                  >
-                    {/* Left: icon + labels */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: '34px',
-                          height: '34px',
-                          borderRadius: '8px',
-                          backgroundColor: iconBg,
-                          flexShrink: 0,
-                          color: style.isSolid ? style.textColor : style.borderColor,
-                          fontSize: '18px',
-                        }}
-                      >
-                        {icon}
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                        <span style={{ fontSize: '11px', color: theme.colors.textMuted, fontWeight: 500, whiteSpace: 'nowrap' }}>
-                          {prefixLabel}
-                        </span>
-                        <span style={{ fontSize: '13px', fontWeight: 700, color: style.valueTextColor }}>
-                          {valueLabel}
-                        </span>
-                      </div>
-                    </div>
-                    {/* Right: status badge — only shown when a value exists */}
-                    {value && (
-                      <span
-                        style={{
-                          fontSize: '10px',
-                          fontWeight: 600,
-                          padding: '3px 8px',
-                          borderRadius: '12px',
-                          // Confirmed badge: always solid green to signal trust
-                          // Pending badge: outlined/dashed so user knows it's not consensus yet
-                          backgroundColor: isConfirmed ? '#059669' : '#ffffff',
-                          color: isConfirmed ? '#ffffff' : style.borderColor,
-                          border: `1px ${isConfirmed ? 'solid' : 'dashed'} ${isConfirmed ? '#059669' : style.borderColor}`,
-                          flexShrink: 0,
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {isConfirmed ? `Confirmed (${agreeingDevices})` : `Pending (${agreeingDevices})`}
-                      </span>
-                    )}
-                  </div>
-                );
+              const getMenuChipColors = (val: string | null) => {
+                if (val === 'yes') return { bg: '#E8F5E9', fg: '#2E7D32' };
+                if (val === 'no') return { bg: '#F5F5F5', fg: '#757575' };
+                if (val === 'not_sure') return { bg: '#FAFAFA', fg: '#9E9E9E' };
+                return { bg: '#F5F5F5', fg: '#757575' };
               };
 
               return (
@@ -367,8 +301,9 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                     </h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {(() => {
-                        const getRequirementsConsensus = () => {
-                          if (!reports || reports.length === 0) return null;
+                        // Gather list of reported requirements (predefined & custom)
+                        const getRequirementsList = () => {
+                          if (!reports || reports.length === 0) return { predefined: [], custom: [] };
                           const seenDevices = new Set<string>();
                           const uniqueReports = reports.filter((r) => {
                             if (seenDevices.has(r.device_id)) return false;
@@ -376,53 +311,107 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                             return true;
                           });
 
-                          if (uniqueReports.length === 0) return null;
+                          const reqSet = new Set<string>();
+                          const customNotes: string[] = [];
 
-                          const counts: Record<string, { count: number; lastDate: number }> = {};
                           uniqueReports.forEach((r) => {
                             if (!r.notes) return;
                             const parts = r.notes.split(',').map((p) => p.trim());
                             parts.forEach((part) => {
-                              let key = part;
-                              if (part.startsWith('other:')) {
-                                key = 'other';
+                              if (part === 'diaper' || part === 'caged' || part === 'stroller') {
+                                reqSet.add(part);
+                              } else if (part.startsWith('other:')) {
+                                customNotes.push(part.substring(6).trim());
+                              } else if (part && part !== 'none') {
+                                customNotes.push(part);
                               }
-                              if (!key) return;
-
-                              const time = new Date(r.created_at).getTime();
-                              if (!counts[key]) {
-                                counts[key] = { count: 0, lastDate: time };
-                              }
-                              counts[key].count += 1;
-                              counts[key].lastDate = Math.max(counts[key].lastDate, time);
                             });
                           });
 
-                          const entries = Object.entries(counts);
-                          if (entries.length === 0) return null;
-
-                          entries.sort((a, b) => {
-                            if (b[1].count !== a[1].count) {
-                              return b[1].count - a[1].count;
-                            }
-                            return b[1].lastDate - a[1].lastDate;
-                          });
-
                           return {
-                            key: entries[0][0],
-                            agreeing_devices: entries[0][1].count,
+                            predefined: Array.from(reqSet),
+                            custom: Array.from(new Set(customNotes)),
                           };
                         };
 
-                        const reqConsensus = getRequirementsConsensus();
-                        const reqValue = reqConsensus?.key || null;
-                        const reqCount = reqConsensus?.agreeing_devices || 0;
+                        const reqData = getRequirementsList();
+                        const hasReqs = reqData.predefined.length > 0 || reqData.custom.length > 0;
+
+                        // Dynamic paw-icons for price tier representing brand aesthetic
+                        const pricePaws = dbPlace.price_range === 'budget' ? '🐾' : dbPlace.price_range === 'mid' ? '🐾🐾' : dbPlace.price_range === 'splurge' ? '🐾🐾🐾' : '🐾';
 
                         return (
                           <>
-                            {renderDetailListItem('price', dbPlace.price_range, dbPlace.price_range_agreeing_devices, priceRangeLabels, 'Price Range', 'No price reports', <MdOutlineMonetizationOn />)}
-                            {renderDetailListItem('menu', dbPlace.pet_menu, dbPlace.pet_menu_agreeing_devices, petMenuLabels, 'Pet Menu', 'No pet menu reports', <MdMenuBook />)}
-                            {renderDetailListItem('req', reqValue, reqCount, reqLabels, 'Pet Requirements', 'No requirements reports', <MdChecklist />)}
+                            {/* Price Range Card */}
+                            <StatusCard
+                              icon={<span style={{ fontSize: '13px', letterSpacing: '-1.5px', fontWeight: 'bold' }}>{pricePaws}</span>}
+                              label="Price Range"
+                              value={dbPlace.price_range ? priceRangeLabels[dbPlace.price_range] : null}
+                              emptyText="No price reports"
+                              iconChipColors={getPriceChipColors(dbPlace.price_range)}
+                              agreeingDevices={dbPlace.price_range_agreeing_devices}
+                            />
+
+                            {/* Pet Menu Card */}
+                            <StatusCard
+                              icon={<FaBone />}
+                              label="Pet Menu"
+                              value={dbPlace.pet_menu ? petMenuLabels[dbPlace.pet_menu] : null}
+                              emptyText="No pet menu reports"
+                              iconChipColors={getMenuChipColors(dbPlace.pet_menu)}
+                              agreeingDevices={dbPlace.pet_menu_agreeing_devices}
+                            />
+
+                            {/* Pet Requirements Card — no overall confidence pill, wraps badges directly underneath the label */}
+                            <StatusCard
+                              icon={<MdChecklist />}
+                              label="Pet Requirements"
+                              value={null}
+                              emptyText="No requirements reported yet"
+                              iconChipColors={{ bg: '#F5F5F5', fg: '#757575' }}
+                              agreeingDevices={0}
+                              hideConfidencePill
+                            >
+                              {hasReqs ? (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px', width: '100%' }}>
+                                  {reqData.predefined.map((key) => (
+                                    <span
+                                      key={key}
+                                      style={{
+                                        fontSize: '10px',
+                                        color: theme.colors.textDark,
+                                        backgroundColor: '#f1f5f9',
+                                        padding: '3px 8px',
+                                        borderRadius: '4px',
+                                        fontWeight: 500,
+                                        border: '1px solid #e2e8f0',
+                                        textAlign: 'left',
+                                      }}
+                                    >
+                                      {reqLabels[key] ?? key}
+                                    </span>
+                                  ))}
+                                  {reqData.custom.map((text) => (
+                                    <span
+                                      key={text}
+                                      style={{
+                                        fontSize: '10px',
+                                        color: theme.colors.textMuted,
+                                        backgroundColor: '#fafafa',
+                                        padding: '3px 8px',
+                                        borderRadius: '4px',
+                                        fontWeight: 500,
+                                        border: `1px dashed ${theme.colors.unconfirmed}`,
+                                        fontStyle: 'italic',
+                                        textAlign: 'left',
+                                      }}
+                                    >
+                                      {text}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : null}
+                            </StatusCard>
                           </>
                         );
                       })()}
