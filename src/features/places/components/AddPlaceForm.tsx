@@ -515,7 +515,7 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
                   checked={reqDiaper}
                   onChange={(e) => setReqDiaper(e.target.checked)}
                 />
-                Diapers Required
+                Diapers
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
                 <input
@@ -523,7 +523,7 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
                   checked={reqCaged}
                   onChange={(e) => setReqCaged(e.target.checked)}
                 />
-                Caged Required
+                Caged
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
                 <input
@@ -531,7 +531,7 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
                   checked={reqStroller}
                   onChange={(e) => setReqStroller(e.target.checked)}
                 />
-                Stroller / Carrier Required
+                Stroller / Carrier
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
                 <input

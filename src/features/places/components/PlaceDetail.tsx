@@ -61,9 +61,9 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
   };
 
   const reqLabels: Record<string, string> = {
-    diaper: 'Diapers Required',
-    caged: 'Caged Required',
-    stroller: 'Stroller/Carrier Required',
+    diaper: 'Diapers',
+    caged: 'Caged',
+    stroller: 'Stroller/Carrier',
     other: 'Custom Requirements',
   };
 
@@ -459,11 +459,11 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                       const parts = report.notes.split(',').map((p) => p.trim());
                       parts.forEach((part) => {
                         if (part === 'diaper') {
-                          reqLabelsList.push('Diapers Required');
+                          reqLabelsList.push('Diapers');
                         } else if (part === 'caged') {
-                          reqLabelsList.push('Caged Required');
+                          reqLabelsList.push('Caged');
                         } else if (part === 'stroller') {
-                          reqLabelsList.push('Stroller/Carrier Required');
+                          reqLabelsList.push('Stroller/Carrier');
                         } else if (part === 'none') {
                           reqLabelsList.push('None (Free Roam)');
                         } else if (part.startsWith('other: ')) {
