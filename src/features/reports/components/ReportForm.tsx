@@ -299,16 +299,6 @@ export const ReportForm: React.FC<ReportFormProps> = ({
               <input
                 type="radio"
                 name="requirements"
-                value="none"
-                checked={requirements === 'none'}
-                onChange={() => setRequirements('none')}
-              />
-              None (Free Roam allowed)
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
-              <input
-                type="radio"
-                name="requirements"
                 value="other"
                 checked={requirements === 'other'}
                 onChange={() => setRequirements('other')}
@@ -318,22 +308,29 @@ export const ReportForm: React.FC<ReportFormProps> = ({
           </div>
 
           {requirements === 'other' && (
-            <textarea
-              value={otherRequirements}
-              onChange={(e) => setOtherRequirements(e.target.value)}
-              placeholder="e.g. Medium dogs allowed in outdoor area only..."
-              maxLength={100}
-              rows={2}
-              style={{
-                width: '100%',
-                padding: '10px',
-                borderRadius: '8px',
-                border: '1px solid #ccc',
-                fontSize: '14px',
-                boxSizing: 'border-box',
-                resize: 'vertical',
-              }}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <textarea
+                value={otherRequirements}
+                onChange={(e) => setOtherRequirements(e.target.value)}
+                placeholder="e.g. Medium dogs allowed in outdoor area only..."
+                maxLength={100}
+                rows={2}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: '8px',
+                  border: '1px solid #ccc',
+                  backgroundColor: '#ffffff',
+                  color: '#000000',
+                  fontSize: '14px',
+                  boxSizing: 'border-box',
+                  resize: 'vertical',
+                }}
+              />
+              <span style={{ fontSize: '11px', color: '#6b7280', alignSelf: 'flex-end' }}>
+                {otherRequirements.length}/100 characters max
+              </span>
+            </div>
           )}
         </div>
 
