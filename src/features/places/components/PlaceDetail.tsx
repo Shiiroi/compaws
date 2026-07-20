@@ -96,8 +96,8 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
         boxSizing: 'border-box',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+        <div style={{ flex: 1, marginRight: '16px', minWidth: 0 }}>
           <span
             style={{
               fontSize: '10px',
