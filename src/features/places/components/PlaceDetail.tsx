@@ -1,5 +1,4 @@
 import React from 'react';
-import { MdChecklist } from 'react-icons/md';
 import { FaBone } from 'react-icons/fa';
 import { theme } from '../../../shared/styles/theme';
 import { type PlaceInBounds, type ReportItem } from '../../../shared/types/geo';
@@ -221,19 +220,32 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                   : `Reported by ${dbPlace.agreeing_devices} contributor${dbPlace.agreeing_devices === 1 ? '' : 's'} -- not yet confirmed`
                 : 'No reports yet';
 
-              // Icon Chip Colors specific to categories, independent of confidence pill colors
-              const getPriceChipColors = (val: string | null) => {
-                if (val === 'budget') return { bg: '#E8F5E9', fg: '#2E7D32' };
-                if (val === 'mid') return { bg: '#FFF3E0', fg: '#EF6C00' };
-                if (val === 'splurge') return { bg: '#FFEBEE', fg: '#C62828' };
-                return { bg: '#F5F5F5', fg: '#757575' };
+              const getPriceValueColor = (val: string | null) => {
+                if (val === 'budget') return '#2E7D32';
+                if (val === 'mid') return '#EF6C00';
+                if (val === 'splurge') return '#C62828';
+                return theme.colors.textMuted;
               };
 
-              const getMenuChipColors = (val: string | null) => {
-                if (val === 'yes') return { bg: '#E8F5E9', fg: '#2E7D32' };
-                if (val === 'no') return { bg: '#F5F5F5', fg: '#757575' };
-                if (val === 'not_sure') return { bg: '#FAFAFA', fg: '#9E9E9E' };
-                return { bg: '#F5F5F5', fg: '#757575' };
+              const getPriceValueIcon = (val: string | null) => {
+                if (val === 'budget') return '🐾';
+                if (val === 'mid') return '🐾🐾';
+                if (val === 'splurge') return '🐾🐾🐾';
+                return null;
+              };
+
+              const getMenuValueColor = (val: string | null) => {
+                if (val === 'yes') return '#2E7D32';
+                if (val === 'no') return '#C62828';
+                if (val === 'not_sure') return '#718096';
+                return theme.colors.textMuted;
+              };
+
+              const getMenuValueIcon = (val: string | null) => {
+                if (val === 'yes') return <FaBone />;
+                if (val === 'no') return '❌';
+                if (val === 'not_sure') return '❓';
+                return null;
               };
 
               return (
@@ -301,7 +313,7 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                     </h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {(() => {
-                        // Gather list of reported requirements (predefined & custom)
+                        // Gather list of reported requirements with count of contributor tags
                         const getRequirementsList = () => {
                           if (!reports || reports.length === 0) return { predefined: [], custom: [] };
                           const seenDevices = new Set<string>();
@@ -311,70 +323,68 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                             return true;
                           });
 
-                          const reqSet = new Set<string>();
-                          const customNotes: string[] = [];
+                          const predefinedCounts: Record<string, number> = {};
+                          const customCounts: Record<string, number> = {};
 
                           uniqueReports.forEach((r) => {
                             if (!r.notes) return;
                             const parts = r.notes.split(',').map((p) => p.trim());
                             parts.forEach((part) => {
                               if (part === 'diaper' || part === 'caged' || part === 'stroller') {
-                                reqSet.add(part);
+                                predefinedCounts[part] = (predefinedCounts[part] || 0) + 1;
                               } else if (part.startsWith('other:')) {
-                                customNotes.push(part.substring(6).trim());
+                                const text = part.substring(6).trim();
+                                if (text) {
+                                  customCounts[text] = (customCounts[text] || 0) + 1;
+                                }
                               } else if (part && part !== 'none') {
-                                customNotes.push(part);
+                                customCounts[part] = (customCounts[part] || 0) + 1;
                               }
                             });
                           });
 
                           return {
-                            predefined: Array.from(reqSet),
-                            custom: Array.from(new Set(customNotes)),
+                            predefined: Object.entries(predefinedCounts).map(([key, count]) => ({ key, count })),
+                            custom: Object.entries(customCounts).map(([text, count]) => ({ text, count })),
                           };
                         };
 
                         const reqData = getRequirementsList();
                         const hasReqs = reqData.predefined.length > 0 || reqData.custom.length > 0;
 
-                        // Dynamic paw-icons for price tier representing brand aesthetic
-                        const pricePaws = dbPlace.price_range === 'budget' ? '🐾' : dbPlace.price_range === 'mid' ? '🐾🐾' : dbPlace.price_range === 'splurge' ? '🐾🐾🐾' : '🐾';
-
                         return (
                           <>
                             {/* Price Range Card */}
                             <StatusCard
-                              icon={<span style={{ fontSize: '13px', letterSpacing: '-1.5px', fontWeight: 'bold' }}>{pricePaws}</span>}
                               label="Price Range"
                               value={dbPlace.price_range ? priceRangeLabels[dbPlace.price_range] : null}
                               emptyText="No price reports"
-                              iconChipColors={getPriceChipColors(dbPlace.price_range)}
+                              valueColor={getPriceValueColor(dbPlace.price_range)}
+                              valueIcon={getPriceValueIcon(dbPlace.price_range)}
                               agreeingDevices={dbPlace.price_range_agreeing_devices}
                             />
 
                             {/* Pet Menu Card */}
                             <StatusCard
-                              icon={<FaBone />}
                               label="Pet Menu"
                               value={dbPlace.pet_menu ? petMenuLabels[dbPlace.pet_menu] : null}
                               emptyText="No pet menu reports"
-                              iconChipColors={getMenuChipColors(dbPlace.pet_menu)}
+                              valueColor={getMenuValueColor(dbPlace.pet_menu)}
+                              valueIcon={getMenuValueIcon(dbPlace.pet_menu)}
                               agreeingDevices={dbPlace.pet_menu_agreeing_devices}
                             />
 
                             {/* Pet Requirements Card — no overall confidence pill, wraps badges directly underneath the label */}
                             <StatusCard
-                              icon={<MdChecklist />}
                               label="Pet Requirements"
                               value={null}
                               emptyText="No requirements reported yet"
-                              iconChipColors={{ bg: '#F5F5F5', fg: '#757575' }}
                               agreeingDevices={0}
                               hideConfidencePill
                             >
                               {hasReqs ? (
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px', width: '100%' }}>
-                                  {reqData.predefined.map((key) => (
+                                  {reqData.predefined.map(({ key, count }) => (
                                     <span
                                       key={key}
                                       style={{
@@ -388,10 +398,10 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                                         textAlign: 'left',
                                       }}
                                     >
-                                      {reqLabels[key] ?? key}
+                                      {reqLabels[key] ?? key} ({count})
                                     </span>
                                   ))}
-                                  {reqData.custom.map((text) => (
+                                  {reqData.custom.map(({ text, count }) => (
                                     <span
                                       key={text}
                                       style={{
@@ -406,7 +416,7 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                                         textAlign: 'left',
                                       }}
                                     >
-                                      {text}
+                                      {text} ({count})
                                     </span>
                                   ))}
                                 </div>
