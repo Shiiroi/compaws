@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PROVINCES } from '../../../data/provinces';
+import { PROVINCES } from '../../../shared/constants/provinces';
 
 interface ProvinceComboboxProps {
   value: string;
