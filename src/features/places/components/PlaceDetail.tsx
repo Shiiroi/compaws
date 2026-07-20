@@ -1,4 +1,5 @@
 import React from 'react';
+import { MdOutlineMonetizationOn, MdMenuBook, MdChecklist } from 'react-icons/md';
 import { theme } from '../../../shared/styles/theme';
 import { type PlaceInBounds, type ReportItem } from '../../../shared/types/geo';
 import { getDeviceId } from '../../../shared/utils/device-id';
@@ -226,7 +227,7 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                 labelMap: Record<string, string>,
                 prefixLabel: string,
                 emptyLabel: string,
-                iconFn: (color: string) => React.ReactNode
+                icon: React.ReactNode
               ) => {
                 const style = getConfidenceStyle(type, value, agreeingDevices);
                 const isConfirmed = agreeingDevices >= 2 && value !== null;
@@ -250,13 +251,16 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          width: '28px',
-                          height: '28px',
-                          borderRadius: '6px',
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '8px',
                           backgroundColor: style.backgroundColor,
+                          flexShrink: 0,
+                          color: style.textColor,
+                          fontSize: '18px',
                         }}
                       >
-                        {iconFn(style.textColor)}
+                        {icon}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                         <span style={{ fontSize: '11px', color: theme.colors.textMuted, fontWeight: 500 }}>
@@ -277,6 +281,7 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                           backgroundColor: style.backgroundColor,
                           color: style.textColor,
                           border: `1px ${style.borderStyle} ${style.borderColor}`,
+                          flexShrink: 0,
                         }}
                       >
                         {isConfirmed ? `Confirmed (${agreeingDevices})` : `Pending (${agreeingDevices})`}
@@ -285,27 +290,6 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                   </div>
                 );
               };
-
-              const priceIcon = (color: string) => (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
-                  <line x1="12" y1="18" x2="12" y2="18" />
-                  <line x1="-2" y1="8" x2="26" y2="8" />
-                </svg>
-              );
-
-              const menuIcon = (color: string) => (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 3h14c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2z" />
-                  <path d="M9 7h6M9 12h6M9 17h6" />
-                </svg>
-              );
-
-              const reqIcon = (color: string) => (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-              );
 
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -425,9 +409,9 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
 
                         return (
                           <>
-                            {renderDetailListItem('price', dbPlace.price_range, dbPlace.price_range_agreeing_devices, priceRangeLabels, 'Price Range', 'No price reports', priceIcon)}
-                            {renderDetailListItem('menu', dbPlace.pet_menu, dbPlace.pet_menu_agreeing_devices, petMenuLabels, 'Pet Menu', 'No pet menu reports', menuIcon)}
-                            {renderDetailListItem('policy', reqValue, reqCount, reqLabels, 'Pet Requirements', 'No requirements reports', reqIcon)}
+                            {renderDetailListItem('price', dbPlace.price_range, dbPlace.price_range_agreeing_devices, priceRangeLabels, 'Price Range', 'No price reports', <MdOutlineMonetizationOn />)}
+                            {renderDetailListItem('menu', dbPlace.pet_menu, dbPlace.pet_menu_agreeing_devices, petMenuLabels, 'Pet Menu', 'No pet menu reports', <MdMenuBook />)}
+                            {renderDetailListItem('policy', reqValue, reqCount, reqLabels, 'Pet Requirements', 'No requirements reports', <MdChecklist />)}
                           </>
                         );
                       })()}
