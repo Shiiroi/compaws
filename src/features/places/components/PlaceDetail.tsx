@@ -471,9 +471,6 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                             {new Date(report.created_at).toLocaleDateString()}
                           </span>
                         </div>
-                        <div style={{ fontSize: '10px', color: theme.colors.textMuted, marginBottom: '6px' }}>
-                          by {isOwnReport ? 'You' : (report.nickname || 'Guest Contributor')}
-                        </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px', marginBottom: '6px' }}>
                           <span style={{ fontSize: '10px', color: theme.colors.textDark, backgroundColor: '#f1f5f9', padding: '3px 8px', borderRadius: '4px', fontWeight: 500 }}>
                             Price: {priceRangeLabels[report.price_range]}
@@ -503,6 +500,11 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                             </p>
                           </div>
                         )}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+                          <span style={{ fontSize: '10px', color: theme.colors.textMuted }}>
+                            by {isOwnReport ? 'You' : (report.nickname || 'Guest Contributor')}
+                          </span>
+                        </div>
                       </li>
                     );
                   });
