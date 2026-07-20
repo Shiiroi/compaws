@@ -96,35 +96,8 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
         boxSizing: 'border-box',
       }}
     >
-      {/* Top close button row */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-        <button
-          onClick={onClose}
-          aria-label="Close panel"
-          style={{
-            background: '#f3f4f6',
-            border: 'none',
-            borderRadius: '50%',
-            width: '32px',
-            height: '32px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '18px',
-            cursor: 'pointer',
-            color: theme.colors.textDark,
-            boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-            padding: 0,
-            lineHeight: 1,
-            flexShrink: 0,
-          }}
-        >
-          &times;
-        </button>
-      </div>
-
-      {/* Main Place Header Details */}
-      <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+      {/* Category Tag & Close button row */}
+      <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '12px' }}>
         <span
           style={{
             fontSize: '10px',
@@ -141,11 +114,39 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
         >
           {isGhost ? 'Untracked Spot' : (dbPlace?.category || 'General')}
         </span>
+        <button
+          onClick={onClose}
+          aria-label="Close panel"
+          style={{
+            position: 'absolute',
+            right: 0,
+            background: '#f3f4f6',
+            border: 'none',
+            borderRadius: '50%',
+            width: '32px',
+            height: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '18px',
+            cursor: 'pointer',
+            color: theme.colors.textDark,
+            boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+            padding: 0,
+            lineHeight: 1,
+          }}
+        >
+          &times;
+        </button>
+      </div>
+
+      {/* Main Place Header Details */}
+      <div style={{ textAlign: 'center', marginBottom: '16px' }}>
         <h2
           style={{
             fontSize: '22px',
             fontWeight: 700,
-            margin: '12px 0 6px 0',
+            margin: '0 0 6px 0',
             color: theme.colors.textDark,
             fontFamily: theme.fonts.heading,
           }}
