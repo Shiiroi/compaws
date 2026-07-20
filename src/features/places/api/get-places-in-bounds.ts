@@ -34,7 +34,7 @@ export async function getPlacesInBounds(
     throw error;
   }
 
-  return (data || []).map((row) => ({
+  return ((data as any) || []).map((row: any) => ({
     id: row.id,
     name: row.name,
     address: row.address || '',
@@ -45,5 +45,9 @@ export async function getPlacesInBounds(
     status: row.status,
     claim: (row.claim as PlaceInBounds['claim']) || null,
     agreeing_devices: row.agreeing_devices,
+    pet_menu: (row.pet_menu as PlaceInBounds['pet_menu']) || null,
+    pet_menu_agreeing_devices: row.pet_menu_agreeing_devices || 0,
+    price_range: (row.price_range as PlaceInBounds['price_range']) || null,
+    price_range_agreeing_devices: row.price_range_agreeing_devices || 0,
   }));
 }

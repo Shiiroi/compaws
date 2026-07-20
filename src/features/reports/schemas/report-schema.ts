@@ -5,9 +5,11 @@ import { z } from 'zod';
  */
 export const reportSchema = z.object({
   claim: z.enum(['allowed', 'not_allowed', 'outdoor_only']),
+  pet_menu: z.enum(['yes', 'no', 'not_sure']),
+  price_range: z.enum(['budget', 'mid', 'splurge']),
   notes: z
     .string()
-    .max(500, 'Notes must be less than 500 characters')
+    .max(100, 'Notes must be less than 100 characters')
     .nullable()
     .optional(),
 });

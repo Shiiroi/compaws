@@ -14,7 +14,7 @@ import { type ReportItem } from '../../../shared/types/geo';
 export async function getReportsForPlace(placeId: string): Promise<ReportItem[]> {
   const { data, error } = await supabase
     .from('pet_policy_reports')
-    .select('claim, notes, created_at, device_id, devices(nickname)')
+    .select('claim, pet_menu, price_range, notes, created_at, device_id, devices(nickname)')
     .eq('place_id', placeId)
     .order('created_at', { ascending: false });
 
@@ -25,6 +25,8 @@ export async function getReportsForPlace(placeId: string): Promise<ReportItem[]>
 
   return (data || []).map((row: any) => ({
     claim: row.claim,
+    pet_menu: row.pet_menu,
+    price_range: row.price_range,
     notes: row.notes,
     created_at: row.created_at,
     device_id: row.device_id,

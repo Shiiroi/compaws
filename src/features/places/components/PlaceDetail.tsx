@@ -2,6 +2,7 @@ import React from 'react';
 import { theme } from '../../../shared/styles/theme';
 import { type PlaceInBounds, type ReportItem } from '../../../shared/types/geo';
 import { getDeviceId } from '../../../shared/utils/device-id';
+import { getConfidenceStyle } from '../../../shared/utils/confidence-color';
 
 interface PlaceDetailProps {
   /** The selected place record data. Can be a DB place or a temporary geocoded ghost place. */
@@ -46,6 +47,18 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
     outdoor_only: 'Outdoor Only',
   };
 
+  const petMenuLabels: Record<string, string> = {
+    yes: '🍪 Has Pet Treats/Menu',
+    no: 'No Pet Menu',
+    not_sure: '❓ Not Sure',
+  };
+
+  const priceRangeLabels: Record<string, string> = {
+    budget: '💰 Budget-Friendly',
+    mid: '💵 Mid-Range',
+    splurge: '💳 Splurge-Worthy',
+  };
+
   const claimColors: Record<string, string> = {
     allowed: theme.colors.allowed,
     not_allowed: theme.colors.notAllowed,
@@ -53,14 +66,6 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
   };
 
   const dbPlace = !isGhost ? (place as PlaceInBounds) : null;
-  const isConfirmed = dbPlace ? dbPlace.agreeing_devices >= 2 && dbPlace.claim !== null : false;
-  const statusLabel = dbPlace
-    ? isConfirmed
-      ? `Confirmed by ${dbPlace.agreeing_devices} contributors`
-      : `Reported by ${dbPlace.agreeing_devices} contributor${
-          dbPlace.agreeing_devices === 1 ? '' : 's'
-        } -- not yet confirmed`
-    : 'Not yet tracked in our directory';
 
   return (
     <div
@@ -176,32 +181,82 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
               margin: '14px 0',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-              <div
-                style={{
-                  width: '10px',
-                  height: '10px',
-                  borderRadius: '50%',
-                  backgroundColor: dbPlace?.claim ? claimColors[dbPlace.claim] : theme.colors.unconfirmed,
-                }}
-              />
-              <span style={{ fontWeight: 600, fontSize: '15px' }}>
-                Policy: {dbPlace?.claim ? claimLabels[dbPlace.claim] : 'No policy reports'}
-              </span>
-            </div>
-            <span
+            <h3
               style={{
                 fontSize: '12px',
-                color: isConfirmed ? '#059669' : '#b45309',
-                backgroundColor: isConfirmed ? '#ecfdf5' : '#fffbeb',
-                padding: '4px 8px',
-                borderRadius: '6px',
-                fontWeight: 500,
-                display: 'inline-block',
+                fontWeight: 700,
+                margin: '0 0 12px 0',
+                color: theme.colors.textDark,
+                fontFamily: theme.fonts.heading,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
               }}
             >
-              {statusLabel}
-            </span>
+              Current Status
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {(() => {
+                const renderBadge = (
+                  type: 'policy' | 'price' | 'menu',
+                  value: string | null,
+                  agreeingDevices: number,
+                  labelMap: Record<string, string>,
+                  emptyLabel: string
+                ) => {
+                  const style = getConfidenceStyle(type, value, agreeingDevices);
+                  const isConfirmed = agreeingDevices >= 2 && value !== null;
+                  const label = value ? labelMap[value] : emptyLabel;
+                  const microcopy = value
+                    ? isConfirmed
+                      ? `Confirmed by ${agreeingDevices} contributors`
+                      : `Reported by ${agreeingDevices} contributor${agreeingDevices === 1 ? '' : 's'} -- not yet confirmed`
+                    : 'No reports yet';
+
+                  return (
+                    <div
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        backgroundColor: style.backgroundColor,
+                        border: `2px ${style.borderStyle} ${style.borderColor}`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '2px',
+                        boxShadow: style.isSolid ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          fontSize: '13px',
+                          color: style.textColor,
+                        }}
+                      >
+                        {label}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          color: style.isSolid ? 'rgba(255,255,255,0.9)' : theme.colors.textMuted,
+                          fontWeight: 500,
+                        }}
+                      >
+                        {microcopy}
+                      </span>
+                    </div>
+                  );
+                };
+
+                return (
+                  <>
+                    {dbPlace && renderBadge('policy', dbPlace.claim, dbPlace.agreeing_devices, claimLabels, 'No policy reports')}
+                    {dbPlace && renderBadge('price', dbPlace.price_range, dbPlace.price_range_agreeing_devices, priceRangeLabels, 'No price reports')}
+                    {dbPlace && renderBadge('menu', dbPlace.pet_menu, dbPlace.pet_menu_agreeing_devices, petMenuLabels, 'No pet menu reports')}
+                  </>
+                );
+              })()}
+            </div>
           </div>
 
           <h3 style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 10px 0', color: theme.colors.textDark, fontFamily: theme.fonts.heading }}>
@@ -256,10 +311,29 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
                         <div style={{ fontSize: '10px', color: theme.colors.textMuted, marginBottom: '6px' }}>
                           by {isOwnReport ? 'You' : (report.nickname || 'Guest Contributor')}
                         </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px', marginBottom: '6px' }}>
+                          <span style={{ fontSize: '10px', color: theme.colors.textMuted, backgroundColor: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>
+                            Price: {priceRangeLabels[report.price_range]}
+                          </span>
+                          <span style={{ fontSize: '10px', color: theme.colors.textMuted, backgroundColor: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>
+                            Menu: {petMenuLabels[report.pet_menu]}
+                          </span>
+                        </div>
                         {report.notes && (
-                          <p style={{ color: theme.colors.textDark, margin: 0, fontStyle: 'italic' }}>
-                            "{report.notes}"
-                          </p>
+                          <div
+                            style={{
+                              marginTop: '8px',
+                              padding: '6px 10px',
+                              backgroundColor: '#ffffff',
+                              borderLeft: `3px solid ${theme.colors.unconfirmed}`,
+                              borderRadius: '4px',
+                              textAlign: 'left',
+                            }}
+                          >
+                            <p style={{ color: theme.colors.textDark, margin: 0, fontStyle: 'italic', fontSize: '11px', lineHeight: '1.4' }}>
+                              “{report.notes}”
+                            </p>
+                          </div>
                         )}
                       </li>
                     );

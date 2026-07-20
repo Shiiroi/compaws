@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-lea
 import L from 'leaflet';
 import { theme } from '../../../shared/styles/theme';
 import type { PlaceInBounds, MapBounds } from '../../../shared/types/geo';
+import { getConfidenceStyle } from '../../../shared/utils/confidence-color';
 
 interface MapViewProps {
   /** The list of places currently queried in the viewport to draw markers. */
@@ -284,15 +285,13 @@ export const MapView: React.FC<MapViewProps> = ({
   };
 
   const getMarkerIcon = (place: PlaceInBounds) => {
-    const isConfirmed = place.agreeing_devices >= 2 && place.claim !== null;
+    const style = getConfidenceStyle('policy', place.claim, place.agreeing_devices);
     
-    if (isConfirmed) {
-      if (place.claim === 'allowed') return createCustomPawIcon(theme.colors.allowed);
-      if (place.claim === 'not_allowed') return createCustomPawIcon(theme.colors.notAllowed);
+    if (style.isSolid) {
+      return createCustomPawIcon(style.backgroundColor);
     }
     
-    const mutedColor = place.claim === 'outdoor_only' ? theme.colors.outdoorOnly : theme.colors.unconfirmed;
-    return createUnconfirmedPawIcon(mutedColor);
+    return createUnconfirmedPawIcon(style.textColor);
   };
 
   const clusters = getClusters();

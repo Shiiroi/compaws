@@ -78,6 +78,8 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
 
   const [category, setCategory] = useState('Café');
   const [claim, setClaim] = useState<'allowed' | 'not_allowed' | 'outdoor_only'>('allowed');
+  const [petMenu, setPetMenu] = useState<'yes' | 'no' | 'not_sure'>('not_sure');
+  const [priceRange, setPriceRange] = useState<'budget' | 'mid' | 'splurge'>('mid');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -163,6 +165,8 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
         p_longitude: resolvedLng,
         p_device_id: getDeviceId(),
         p_claim: claim,
+        p_pet_menu: petMenu,
+        p_price_range: priceRange,
         p_notes: notes.trim(),
       });
 
@@ -186,6 +190,8 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
             p_longitude: resolvedLng,
             p_device_id: getDeviceId(),
             p_claim: claim,
+            p_pet_menu: petMenu,
+            p_price_range: priceRange,
             p_notes: notes.trim(),
           });
           alert("Network failure. Saved! We'll register this place once you're back online. 🐾");
@@ -411,6 +417,82 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
                   onChange={() => setClaim('not_allowed')}
                 />
                 Not Allowed (Pets restricted)
+              </label>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '16px', borderTop: '1px solid #eee', paddingTop: '12px' }}>
+            <label style={{ display: 'block', fontWeight: 600, marginBottom: '8px', fontSize: '14px' }}>
+              Price Range
+            </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
+                <input
+                  type="radio"
+                  name="priceRange"
+                  value="budget"
+                  checked={priceRange === 'budget'}
+                  onChange={() => setPriceRange('budget')}
+                />
+                💰 Budget-Friendly
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
+                <input
+                  type="radio"
+                  name="priceRange"
+                  value="mid"
+                  checked={priceRange === 'mid'}
+                  onChange={() => setPriceRange('mid')}
+                />
+                💵 Mid-Range
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
+                <input
+                  type="radio"
+                  name="priceRange"
+                  value="splurge"
+                  checked={priceRange === 'splurge'}
+                  onChange={() => setPriceRange('splurge')}
+                />
+                💳 Splurge-Worthy
+              </label>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '16px', borderTop: '1px solid #eee', paddingTop: '12px' }}>
+            <label style={{ display: 'block', fontWeight: 600, marginBottom: '8px', fontSize: '14px' }}>
+              Does this place have a pet menu?
+            </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
+                <input
+                  type="radio"
+                  name="petMenu"
+                  value="yes"
+                  checked={petMenu === 'yes'}
+                  onChange={() => setPetMenu('yes')}
+                />
+                🍪 Has Pet Treats/Menu
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
+                <input
+                  type="radio"
+                  name="petMenu"
+                  value="no"
+                  checked={petMenu === 'no'}
+                  onChange={() => setPetMenu('no')}
+                />
+                No Pet Menu
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
+                <input
+                  type="radio"
+                  name="petMenu"
+                  value="not_sure"
+                  checked={petMenu === 'not_sure'}
+                  onChange={() => setPetMenu('not_sure')}
+                />
+                ❓ Not Sure
               </label>
             </div>
           </div>
