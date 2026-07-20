@@ -96,11 +96,6 @@ export const StatusCard: React.FC<StatusCardProps> = ({
       {/* Bottom Row: Value (with icon) or Children */}
       {value !== null ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
-          {valueIcon && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', color: valueColor, fontSize: '14px', flexShrink: 0 }}>
-              {valueIcon}
-            </span>
-          )}
           <span
             style={{
               fontSize: '13px',
@@ -111,6 +106,11 @@ export const StatusCard: React.FC<StatusCardProps> = ({
           >
             {value}
           </span>
+          {valueIcon && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', color: valueColor, fontSize: '14px', flexShrink: 0 }}>
+              {valueIcon}
+            </span>
+          )}
         </div>
       ) : children ? (
         // Custom badge row container for requirements
