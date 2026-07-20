@@ -73,22 +73,18 @@ export const StatusCard: React.FC<StatusCardProps> = ({
           {label}
         </span>
 
-        {/* Confidence Pill — aligned to the right */}
+        {/* Confidence text — right-aligned, no background, just a small colored label */}
         {!hideConfidencePill && agreeingDevices > 0 && (
           <span
             style={{
               fontSize: '10px',
               fontWeight: 600,
-              padding: '3px 8px',
-              borderRadius: '12px',
-              backgroundColor: confStyle.backgroundColor,
-              color: confStyle.textColor,
-              border: `1px ${confStyle.borderStyle} ${confStyle.borderColor}`,
+              color: isConfirmed ? confStyle.borderColor : theme.colors.textMuted,
               flexShrink: 0,
               whiteSpace: 'nowrap',
             }}
           >
-            {isConfirmed ? `Confirmed (${agreeingDevices})` : `Reported (${agreeingDevices})`}
+            {isConfirmed ? `✓ Confirmed (${agreeingDevices})` : `Reported (${agreeingDevices})`}
           </span>
         )}
       </div>
