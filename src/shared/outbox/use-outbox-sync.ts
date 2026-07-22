@@ -4,19 +4,15 @@ import { getPendingReports, deletePendingReport, type PendingReport } from './ou
 import { getDeviceId } from '../utils/device-id';
 
 /**
- * Monitors connection changes and automatically pushes queued offline contributions
- * (adds, reviews, flags) from IndexedDB to the database upon recovery.
+ * Monitors network connection state. Automatically pushes queued offline reports from IndexedDB to Supabase when network connectivity recovers.
  * 
- * WHY VISIBILITY STATE FALLBACK:
- * Some mobile browsers (particularly iOS Safari) suspend timers and socket state
- * when tabs are backgrounded. When network recovers while backgrounded, they fail to
- * fire the standard window 'online' event upon active foreground wakeup. Listening
- * to 'visibilitychange' acts as a deliberate redundancy to ensure queued uploads flush.
+ * Visibility state fallback rationale:
+ * - Mobile browsers suspend timers and network listeners when tabs run in the background.
+ * - Listening to the `visibilitychange` event ensures queued uploads flush when the tab returns to the foreground.
  * 
- * WHY ABORT-ON-ERROR ITERATION:
- * When processing the queue oldest-first, if any record fails due to a transport error,
- * we halt the entire sync process immediately. We do NOT loop or immediately retry to
- * avoid spamming/hammering recovering connections, or spinning endlessly on permanent failures.
+ * Abort-on-error iteration rationale:
+ * - Processes pending outbox records from oldest to newest.
+ * - If a transport error occurs, halts synchronization immediately to avoid hammering the database connection.
  */
 export function useOutboxSync() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);

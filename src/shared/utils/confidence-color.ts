@@ -15,17 +15,14 @@ export interface ConfidenceStyle {
 }
 
 /**
- * Returns consistent styling configurations for badges and map pins based on confidence and values.
+ * Returns consistent styling configurations for badges and map pins based on confidence levels.
  *
- * WHY WE EXTRACT THIS:
- * Centralizing the confirmed vs unconfirmed logic prevents discrepancies where Map pins
- * and details badges render different visual states for the same consensus data.
+ * Centralization rationale:
+ * - Prevents visual discrepancies between map pins and detail badges.
  *
- * WHY TWO TEXT COLORS:
- * - `textColor`      → used where text/icon sits ON the colored background (badge pill, icon box).
- *                      Solid confirmed = white; unconfirmed = the accent color.
- * - `valueTextColor` → used where the human-readable value label sits on the WHITE card background.
- *                      Always the accent color (never white) so it stays readable.
+ * Color selection rationale:
+ * - `textColor`: Applied when text sits directly on a colored background (white for solid badges, accent color for unconfirmed).
+ * - `valueTextColor`: Applied when text sits on a white card background (always uses accent color for readability).
  */
 export function getConfidenceStyle(
   valueType: 'policy' | 'price' | 'menu' | 'req',
@@ -130,9 +127,8 @@ export function getConfidenceStyle(
         };
       }
     } else if (valueType === 'req') {
-      // Requirements are always a neutral confirmed green pill — no per-value color semantics.
-      // WHY: requirements are factual conditions (diaper/caged/stroller), not a quality judgment,
-      // so we don't want warm/cool color coding implying good/bad.
+      // Requirements always use a neutral green pill.
+      // Rationale: Requirements state objective rules (such as diapers or strollers) rather than quality ratings.
       const color = '#059669';
       return {
         backgroundColor: '#f0fdf4', // light green tint for icon box

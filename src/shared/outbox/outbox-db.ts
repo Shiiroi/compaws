@@ -1,23 +1,23 @@
 import { uuidv4 } from '../utils/uuid';
 
 /**
- * Represents an offline contribution queued in IndexedDB for remote synchronization.
- * Supports multiple payload schemas distinguished by the 'type' field.
+ * Represents an offline report queued in IndexedDB for remote synchronization.
+ * Supports multiple payload schemas distinguished by the `type` discriminator.
  */
 export interface PendingReport {
-  /** Unique ID key for this outbox database entry. */
+  /** Unique primary key for this outbox record. */
   id: string;
-  /** Discriminator categorizing the target table/endpoint:
+  /** Categorizes the target database operation:
    * - 'report': policy updates on existing places
-   * - 'place': new places with their initial policy report
-   * - 'flag': flag moderation reports
+   * - 'place': new places submitted with an initial report
+   * - 'flag': moderation flags on places
    */
   type: 'report' | 'place' | 'flag';
-  /** Raw query parameters matching their respective API call structure. */
+  /** Payload parameters matching the destination API endpoint structure. */
   payload: any;
   /** ISO timestamp recording when the record was cached locally. */
   created_at: string;
-  /** Synchronization flag. Defaults to false. */
+  /** Synchronization status flag. Defaults to false. */
   synced: boolean;
 }
 
@@ -26,8 +26,8 @@ const DB_VERSION = 1;
 const STORE_NAME = 'pending-reports';
 
 /**
- * Opens a connection to the IndexedDB outbox database, creating the store on first run.
- * Resolves with the connection instance.
+ * Opens a connection to the IndexedDB outbox database.
+ * Creates the object store when initializing the database for the first time.
  */
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -46,15 +46,13 @@ function openDB(): Promise<IDBDatabase> {
 }
 
 /**
- * Queues a contribution payload into the local outbox IndexedDB.
+ * Queues a report payload into the IndexedDB outbox database.
  * 
- * WHY:
- * This acts as our persistent write-buffer. If a user submits data while in a dead-zone,
- * this function captures it so the user doesn't lose their inputs when closing the browser tab.
+ * Rationale: Captures user submissions offline so browser refreshes or closures do not lose data.
  * 
- * @param {'report' | 'place' | 'flag'} type - Payload schema discriminator.
- * @param {any} payload - The contribution parameters.
- * @returns {Promise<PendingReport>} The locally cached outbox record.
+ * @param {'report' | 'place' | 'flag'} type - Schema discriminator.
+ * @param {any} payload - Submission parameters.
+ * @returns {Promise<PendingReport>} The cached outbox record.
  */
 export async function addPendingReport(type: 'report' | 'place' | 'flag', payload: any): Promise<PendingReport> {
   const db = await openDB();
@@ -77,9 +75,9 @@ export async function addPendingReport(type: 'report' | 'place' | 'flag', payloa
 }
 
 /**
- * Retrieves all pending outbox entries in IndexedDB.
+ * Retrieves all pending outbox records from IndexedDB.
  * 
- * @returns {Promise<PendingReport[]>} Array of cached reports.
+ * @returns {Promise<PendingReport[]>} Array of cached outbox records.
  */
 export async function getPendingReports(): Promise<PendingReport[]> {
   const db = await openDB();
@@ -94,9 +92,9 @@ export async function getPendingReports(): Promise<PendingReport[]> {
 }
 
 /**
- * Marks a queued outbox item as synced (useful if preserving log details locally).
+ * Marks an outbox record as synced in IndexedDB.
  * 
- * @param {string} id - The UUID of the outbox record.
+ * @param {string} id - Unique identifier of the outbox record.
  */
 export async function markReportSynced(id: string): Promise<void> {
   const db = await openDB();
@@ -121,13 +119,11 @@ export async function markReportSynced(id: string): Promise<void> {
 }
 
 /**
- * Deletes a synchronized or discarded contribution from the local outbox.
+ * Deletes a synchronized report from the local IndexedDB outbox.
  * 
- * WHY DELETE IMMEDIATELY:
- * To avoid unbounded storage footprint on the user's browser, we clean up
- * and purge entries immediately once they are verified on the remote Supabase database.
+ * Immediate deletion rationale: Prevents unbounded storage growth after Supabase verifies receipt.
  * 
- * @param {string} id - The UUID of the outbox record.
+ * @param {string} id - Unique identifier of the outbox record.
  */
 export async function deletePendingReport(id: string): Promise<void> {
   const db = await openDB();
