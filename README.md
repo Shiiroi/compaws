@@ -63,7 +63,3 @@ Compaws uses a local-first architecture to handle offline reports and poor cellu
 - **IndexedDB Outbox**: Stores pending reports on the device while offline. Flushes queued records to Supabase when network connection restores.
 - **Geofence Validation**: Verifies device GPS coordinates against place coordinates before accepting contributions.
 - **Supabase Backend**: Manages place data, report summaries, and consensus calculations using PostgreSQL views and functions.
-
-## Writing Style Guide
-
-Consult [.agents/skills/ste-lite-docs/SKILL.md](file:///Users/vince/personal-projects/pet-friendly/pet-friendly-ph/.agents/skills/ste-lite-docs/SKILL.md) when writing documentation or code comments for this repository.
