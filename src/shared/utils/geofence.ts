@@ -1,11 +1,9 @@
 import { env } from '../../config/env';
 
 /**
- * Named constant defining our maximum contribution distance radius in meters.
+ * Defines the maximum allowed distance in meters between a device and a place.
  * 
- * WHY 300 METERS:
- * Loose enough to accommodate typical urban high-rise GPS reflections and drifts,
- * but tight enough to verify that a device is physically on-site.
+ * Rationale: 300 meters accommodates urban GPS drift while confirming on-site presence.
  */
 export const GEOFENCE_RADIUS_METERS = 300;
 
@@ -19,10 +17,10 @@ export class GeolocationError extends Error {
 }
 
 /**
- * Retrieves the current user GPS coordinates using HTML5 Geolocation API,
- * wrapping browser errors with distinct descriptions.
+ * Retrieves current device GPS coordinates using the HTML5 Geolocation API.
+ * Wraps browser errors with clear user-facing messages.
  * 
- * @returns {Promise<{ latitude: number; longitude: number }>} User coordinates.
+ * @returns {Promise<{ latitude: number; longitude: number }>} Device coordinates.
  */
 export function getCurrentPosition(): Promise<{ latitude: number; longitude: number }> {
   return new Promise((resolve, reject) => {
@@ -57,10 +55,10 @@ export function getCurrentPosition(): Promise<{ latitude: number; longitude: num
 }
 
 /**
- * Calculates the geodesic distance in meters between two lat/lng coordinates
- * using the Haversine formula and checks if it falls within the radius boundary.
+ * Calculates geodesic distance between two coordinate pairs using the Haversine formula.
+ * Returns true if the distance does not exceed the target radius.
  * 
- * @returns {boolean} True if within radius.
+ * @returns {boolean} True if coordinates fall within the specified radius.
  */
 export function isWithinRadius(
   targetLat: number,
@@ -85,16 +83,13 @@ export function isWithinRadius(
 }
 
 /**
- * Validates whether the device is within proximity boundaries of the place.
+ * Verifies that the device is physically located near the target place.
  * 
- * WHY GEOFENCING PROXIMITY:
- * - Ensures reviewers are physically located at the place when contributing,
- *   preventing armchair spam reports.
+ * Geofencing rationale:
+ * - Prevents remote spam reports by requiring on-site presence.
  * 
- * WHY DEV TOGGLE (VITE_ENFORCE_GEOFENCE):
- * - Allows Vince to seed initial data records from his computer during development
- *   without having to physically travel to every place.
- * - When false, logs a warning but resolves to true to allow testing flow.
+ * Dev toggle behavior (VITE_ENFORCE_GEOFENCE):
+ * - If set to false, logs a warning and returns true to support local testing.
  */
 export async function checkGeofence(
   targetLat: number,

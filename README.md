@@ -1,32 +1,69 @@
-# React + TypeScript + Vite
+# Compaws (pet-friendly-ph)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Compaws tracks pet-friendly places in the Philippines through crowdsourced community reports.
 
-Currently, two official plugins are available:
+## Prerequisites
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js 20 or higher
+- pnpm 9 or higher
+- A Supabase project instance
 
-## React Compiler
+## Setup Instructions
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Shiiroi/compaws.git
+   cd compaws
+   ```
 
-## Expanding the Oxlint configuration
+2. Install project dependencies:
+   ```bash
+   pnpm install
+   ```
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+3. Copy the environment configuration template:
+   ```bash
+   cp .env.example .env
+   ```
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
+4. Populate `.env` with your Supabase credentials:
+   ```env
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-key
+   VITE_ENFORCE_GEOFENCE=true
+   ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Development Commands
+
+- Start the development server:
+  ```bash
+  pnpm dev
+  ```
+- Build the production bundle:
+  ```bash
+  pnpm build
+  ```
+- Preview the production build locally:
+  ```bash
+  pnpm preview
+  ```
+- Run the linter:
+  ```bash
+  pnpm lint
+  ```
+
+## Architecture Overview
+
+Compaws uses a local-first architecture to handle offline reports and poor cellular connectivity.
+
+### Core Components
+
+- **Frontend Application**: Built with React, TypeScript, and Vite.
+- **Service Worker**: Caches CARTO map tiles using a CacheFirst strategy. Serves API queries using a NetworkFirst strategy.
+- **IndexedDB Outbox**: Stores pending reports on the device while offline. Flushes queued records to Supabase when network connection restores.
+- **Geofence Validation**: Verifies device GPS coordinates against place coordinates before accepting contributions.
+- **Supabase Backend**: Manages place data, report summaries, and consensus calculations using PostgreSQL views and functions.
+
+## Writing Style Guide
+
+Consult [docs/writing-style.md](file:///Users/vince/personal-projects/pet-friendly/pet-friendly-ph/docs/writing-style.md) when writing documentation or code comments for this repository.

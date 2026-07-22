@@ -3,18 +3,17 @@ import { type PlaceInBounds } from '../../../shared/types/geo';
 
 
 /**
- * Queries pet-friendly places that lie within the specified geographic coordinates bounding box.
+ * Queries pet-friendly places located within the specified bounding box coordinates.
  * 
- * WHY WE FETCH UNCONFIRMED PLACES:
- * - We return all matching places regardless of their agreement counts (agreeing_devices).
- * - Low-confidence entries (agreeing_devices < 2) are not hidden but are returned to the client 
- *   to render visually muted. This maintains transparency about confidence without hiding contributions.
+ * Unconfirmed places rationale:
+ * - Returns all matching places regardless of agreement count (`agreeing_devices`).
+ * - Low-confidence entries (`agreeing_devices` < 2) render visually muted on the frontend to maintain transparency.
  * 
- * @param {number} minLat - Southern boundary.
- * @param {number} minLng - Western boundary.
- * @param {number} maxLat - Northern boundary.
- * @param {number} maxLng - Eastern boundary.
- * @returns {Promise<PlaceInBounds[]>} Array of places located in the bounding box.
+ * @param {number} minLat - Southern latitude boundary.
+ * @param {number} minLng - Western longitude boundary.
+ * @param {number} maxLat - Northern latitude boundary.
+ * @param {number} maxLng - Eastern longitude boundary.
+ * @returns {Promise<PlaceInBounds[]>} Places located within the specified bounding box.
  */
 export async function getPlacesInBounds(
   minLat: number,
