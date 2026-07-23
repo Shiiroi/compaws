@@ -163,16 +163,6 @@ export const ReportForm: React.FC<ReportFormProps> = ({
               />
               Outdoor Only (Pets allowed in al fresco areas only)
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
-              <input
-                type="radio"
-                name="claim"
-                value="not_allowed"
-                checked={claim === 'not_allowed'}
-                onChange={() => setClaim('not_allowed')}
-              />
-              Not Allowed (No pets permitted at all)
-            </label>
           </div>
         </div>
 

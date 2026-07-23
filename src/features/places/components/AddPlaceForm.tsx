@@ -406,16 +406,6 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
                 />
                 Outdoor Only (Al fresco only)
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
-                <input
-                  type="radio"
-                  name="claim"
-                  value="not_allowed"
-                  checked={claim === 'not_allowed'}
-                  onChange={() => setClaim('not_allowed')}
-                />
-                Not Allowed (Pets restricted)
-              </label>
             </div>
           </div>
 
