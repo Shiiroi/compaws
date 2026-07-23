@@ -5,6 +5,7 @@ import { uuidv4 } from '../../../shared/utils/uuid';
 import { addPendingReport } from '../../../shared/outbox/outbox-db';
 import { PlaceSearchBar } from './PlaceSearchBar';
 import { getPlaceDetails } from '../api/search-google-places';
+import { CityCombobox } from './CityCombobox';
 
 interface AddPlaceFormProps {
   onClose: () => void;
@@ -252,19 +253,28 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
 
       {/* Place search lookup */}
       {!selectedPlace ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minHeight: '180px' }}>
-          <div style={{ position: 'relative', height: '100px' }}>
-            <label style={{ display: 'block', fontWeight: 600, marginBottom: '8px', fontSize: '14px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', minHeight: '160px' }}>
+          <div>
+            <label style={{ display: 'block', fontWeight: 600, marginBottom: '16px', fontSize: '14px', color: '#374151' }}>
               Find the place using Google Search:
             </label>
             <PlaceSearchBar
               loadedPlaces={[]}
               onSelectLocalPlace={handleSelectLocal}
               onSelectGeocodePlace={handleSelectSearch}
+              containerStyle={{
+                position: 'relative',
+                top: 0,
+                left: 0,
+                transform: 'none',
+                width: '100%',
+                maxWidth: '100%',
+                zIndex: 100,
+              }}
             />
           </div>
-          
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
             <button
               type="button"
               onClick={onClose}
@@ -286,26 +296,41 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
       ) : (
         /* Form content prefilled once place is selected */
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', fontWeight: 600, fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
-              Place Name
-            </label>
-            <input
-              type="text"
-              value={selectedPlace.name}
-              disabled
-              style={{
-                width: '100%',
-                padding: '10px',
-                borderRadius: '8px',
-                border: '1px solid #ddd',
-                backgroundColor: '#f3f4f6',
-                fontSize: '14px',
-                boxSizing: 'border-box',
-              }}
-            />
+          {/* Row 1: Place Name and City */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+            <div>
+              <label style={{ display: 'block', fontWeight: 600, fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
+                Place Name
+              </label>
+              <input
+                type="text"
+                value={selectedPlace.name}
+                disabled
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: '8px',
+                  border: '1px solid #ddd',
+                  backgroundColor: '#f3f4f6',
+                  fontSize: '14px',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontWeight: 600, fontSize: '12px', color: '#4b5563', marginBottom: '4px' }}>
+                City *
+              </label>
+              <CityCombobox
+                value={city}
+                onChange={setCity}
+                placeholder="e.g. Quezon City"
+              />
+            </div>
           </div>
 
+          {/* Row 2: Address (Whole Row) */}
           <div style={{ marginBottom: '12px' }}>
             <label style={{ display: 'block', fontWeight: 600, fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
               Address
@@ -326,58 +351,35 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontWeight: 600, fontSize: '12px', color: '#4b5563', marginBottom: '4px' }}>
-                City *
-              </label>
-              <input
-                type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="e.g. Quezon City"
-                required
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  borderRadius: '8px',
-                  border: '1px solid #ccc',
-                  backgroundColor: '#ffffff',
-                  color: '#1f2937',
-                  fontSize: '14px',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
-            <div style={{ width: '100%', marginTop: '12px' }}>
-              <label style={{ display: 'block', fontWeight: 600, fontSize: '12px', color: '#4b5563', marginBottom: '6px' }}>
-                Categories / Tags * (Select all that apply)
-              </label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {categories.map((cat) => {
-                  const isSelected = selectedCategories.includes(cat);
-                  return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => toggleCategory(cat)}
-                      style={{
-                        padding: '6px 14px',
-                        borderRadius: '20px',
-                        border: isSelected ? '1.5px solid #e07a5f' : '1px solid #d1d5db',
-                        backgroundColor: isSelected ? '#fdf0ed' : '#ffffff',
-                        color: isSelected ? '#e07a5f' : '#4b5563',
-                        fontWeight: isSelected ? 700 : 500,
-                        fontSize: '13px',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      {isSelected ? '✓ ' : '+ '}{cat}
-                    </button>
-                  );
-                })}
-              </div>
+          {/* Row 3: Categories / Tags (Whole Row) */}
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontWeight: 600, fontSize: '12px', color: '#4b5563', marginBottom: '6px' }}>
+              Categories / Tags * (Select all that apply)
+            </label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {categories.map((cat) => {
+                const isSelected = selectedCategories.includes(cat);
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => toggleCategory(cat)}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '20px',
+                      border: isSelected ? '1.5px solid #e07a5f' : '1px solid #d1d5db',
+                      backgroundColor: isSelected ? '#fdf0ed' : '#ffffff',
+                      color: isSelected ? '#e07a5f' : '#4b5563',
+                      fontWeight: isSelected ? 700 : 500,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {isSelected ? '✓ ' : '+ '}{cat}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
