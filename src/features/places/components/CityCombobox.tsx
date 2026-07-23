@@ -72,16 +72,15 @@ export const CityCombobox: React.FC<CityComboboxProps> = ({
           placeholder={placeholder}
           style={{
             width: '100%',
-            height: '44px',
-            padding: '0 36px 0 12px',
+            height: '40px',
+            padding: '0 36px 0 10px',
             borderRadius: '8px',
-            border: error ? '1px solid #ef4444' : '1px solid #d1d5db',
+            border: error ? '1px solid #ef4444' : '1px solid #ccc',
             backgroundColor: '#ffffff',
             color: '#1f2937',
             fontSize: '14px',
             boxSizing: 'border-box',
             outline: 'none',
-            transition: 'border-color 0.15s ease',
           }}
         />
         <svg
@@ -113,7 +112,7 @@ export const CityCombobox: React.FC<CityComboboxProps> = ({
             left: 0,
             right: 0,
             backgroundColor: '#ffffff',
-            border: '1px solid #e5e7eb',
+            border: '1px solid #ccc',
             borderRadius: '8px',
             boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
             zIndex: 1200,
