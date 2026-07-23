@@ -253,19 +253,28 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
 
       {/* Place search lookup */}
       {!selectedPlace ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minHeight: '180px' }}>
-          <div style={{ position: 'relative', height: '110px' }}>
-            <label style={{ display: 'block', fontWeight: 600, marginBottom: '16px', fontSize: '14px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', minHeight: '160px' }}>
+          <div>
+            <label style={{ display: 'block', fontWeight: 600, marginBottom: '16px', fontSize: '14px', color: '#374151' }}>
               Find the place using Google Search:
             </label>
             <PlaceSearchBar
               loadedPlaces={[]}
               onSelectLocalPlace={handleSelectLocal}
               onSelectGeocodePlace={handleSelectSearch}
+              containerStyle={{
+                position: 'relative',
+                top: 0,
+                left: 0,
+                transform: 'none',
+                width: '100%',
+                maxWidth: '100%',
+                zIndex: 100,
+              }}
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
             <button
               type="button"
               onClick={onClose}

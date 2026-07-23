@@ -14,6 +14,8 @@ interface PlaceSearchBarProps {
   onSelectLocalPlace: (place: PlaceInBounds) => void;
   /** Callback triggered when an external location is selected to center the map. */
   onSelectGeocodePlace: (lat: number, lng: number, name: string, address: string) => void;
+  /** Optional custom container style overrides (e.g. for form modals). */
+  containerStyle?: React.CSSProperties;
 }
 
 /**
@@ -23,6 +25,7 @@ export const PlaceSearchBar: React.FC<PlaceSearchBarProps> = ({
   loadedPlaces,
   onSelectLocalPlace,
   onSelectGeocodePlace,
+  containerStyle,
 }) => {
   const [query, setQuery] = useState('');
   const [geocodeResults, setGeocodeResults] = useState<GeocodingResult[]>([]);
@@ -123,6 +126,7 @@ export const PlaceSearchBar: React.FC<PlaceSearchBarProps> = ({
         maxWidth: '480px',
         zIndex: 1000,
         fontFamily: theme.fonts.body,
+        ...containerStyle,
       }}
     >
       <input
