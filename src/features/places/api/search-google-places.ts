@@ -128,7 +128,6 @@ export async function searchGooglePlaces(
 }
 
 import type { WeeklyOperatingHours } from '../types/hours';
-import { parseGoogleOpeningHours } from '../../../shared/utils/operating-hours';
 
 /**
  * Helper to extract city/municipality and province from Google address components array.
@@ -199,7 +198,7 @@ export async function getPlaceDetails(
     const place = new Place({ id: placeId });
     
     await place.fetchFields({
-      fields: ['location', 'regularOpeningHours', 'addressComponents'],
+      fields: ['location', 'addressComponents'],
       sessionToken,
     });
 
@@ -207,16 +206,12 @@ export async function getPlaceDetails(
       return null;
     }
 
-    const parsedHours = place.regularOpeningHours
-      ? parseGoogleOpeningHours(place.regularOpeningHours)
-      : null;
-
     const locInfo = parseCityProvince(place.addressComponents);
 
     return {
       lat: place.location.lat(),
       lng: place.location.lng(),
-      openingHours: parsedHours,
+      openingHours: null,
       city: locInfo.city,
       province: locInfo.province,
     };
