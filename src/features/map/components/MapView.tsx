@@ -232,7 +232,7 @@ const MapController: React.FC<{ center: [number, number] | null }> = ({ center }
   const map = useMap();
   useEffect(() => {
     if (center) {
-      map.setView(center, 15);
+      map.flyTo(center, 15, { duration: 0.8, easeLinearity: 0.25 });
     }
   }, [center, map]);
   return null;
@@ -338,7 +338,7 @@ const ClusterMarker: React.FC<{
     );
 
     if (expansionZoom > currentZoom && currentZoom < 18) {
-      map.setView([lat, lng], expansionZoom);
+      map.flyTo([lat, lng], expansionZoom, { duration: 0.8, easeLinearity: 0.25 });
     } else {
       // At max zoom or identical coordinates: Spiderfy leaf markers!
       const leaves = supercluster.getLeaves(clusterId, 50);
@@ -445,11 +445,27 @@ export const MapView: React.FC<MapViewProps> = ({
         }
 
         .custom-paw-pin > div, .custom-cluster > div, .custom-paw-unconfirmed > div, .custom-ghost-pin > div {
-          transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+          transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease-out;
+          animation: markerPopIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
 
         .custom-paw-pin:hover > div, .custom-cluster:hover > div, .custom-paw-unconfirmed:hover > div, .custom-ghost-pin:hover > div {
           transform: scale(1.18);
+        }
+
+        @keyframes markerPopIn {
+          0% {
+            transform: scale(0.3);
+            opacity: 0;
+          }
+          70% {
+            transform: scale(1.12);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
         }
       `}</style>
       <MapContainer
