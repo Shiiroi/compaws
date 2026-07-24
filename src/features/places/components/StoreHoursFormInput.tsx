@@ -140,6 +140,24 @@ export const StoreHoursFormInput: React.FC<StoreHoursFormInputProps> = ({
     return `${selectedDays.map((d) => DAY_LABELS[d].slice(0, 3)).join(', ')} (${selectedDays.length} days selected)`;
   };
 
+  const isPresetStandard = DAYS_OF_WEEK.every((day) => {
+    const s = hours[day];
+    return s && !s.isClosed && !s.is24Hours && s.slots?.length === 1 && s.slots[0].open === '09:00' && s.slots[0].close === '18:00';
+  });
+
+  const isPreset247 = DAYS_OF_WEEK.every((day) => {
+    const s = hours[day];
+    return s && s.is24Hours;
+  });
+
+  const isPresetWeekdaysAndWeekends = DAYS_OF_WEEK.every((day) => {
+    const s = hours[day];
+    if (day === 'saturday' || day === 'sunday') {
+      return s && !s.isClosed && !s.is24Hours && s.slots?.length === 1 && s.slots[0].open === '10:00' && s.slots[0].close === '20:00';
+    }
+    return s && !s.isClosed && !s.is24Hours && s.slots?.length === 1 && s.slots[0].open === '09:00' && s.slots[0].close === '18:00';
+  });
+
   return (
     <div
       style={{
@@ -224,173 +242,177 @@ export const StoreHoursFormInput: React.FC<StoreHoursFormInputProps> = ({
             type="button"
             onClick={applyPresetStandard}
             style={{
-              padding: '10px 14px',
+              padding: '12px 14px',
               borderRadius: '10px',
-              border: `1px solid ${theme.colors.borderLight}`,
-              backgroundColor: '#FAFAFA',
+              border: isPresetStandard ? `2px solid ${theme.colors.terracotta}` : `1px solid ${theme.colors.borderLight}`,
+              backgroundColor: isPresetStandard ? theme.colors.softPink : '#FAFAFA',
               textAlign: 'left',
               cursor: 'pointer',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
+              transition: 'all 0.15s ease',
             }}
           >
             <div>
-              <div style={{ fontWeight: 600, fontSize: '13px', color: theme.colors.textDark }}>
-                Standard Hours (9 AM – 6 PM)
+              <div style={{ fontWeight: isPresetStandard ? 700 : 600, fontSize: '13px', color: isPresetStandard ? theme.colors.terracotta : theme.colors.textDark }}>
+                Standard Hours (9 AM – 6 PM) {isPresetStandard && '✓'}
               </div>
               <div style={{ fontSize: '11px', color: theme.colors.textMuted }}>
                 Open 9:00 AM to 6:00 PM every day
               </div>
             </div>
-            <FaCheckCircle style={{ color: theme.colors.allowed }} />
+            <FaCheckCircle style={{ color: isPresetStandard ? theme.colors.terracotta : theme.colors.allowed }} />
           </button>
 
           <button
             type="button"
             onClick={applyPresetWeekdaysAndWeekends}
             style={{
-              padding: '10px 14px',
+              padding: '12px 14px',
               borderRadius: '10px',
-              border: `1px solid ${theme.colors.borderLight}`,
-              backgroundColor: '#FAFAFA',
+              border: isPresetWeekdaysAndWeekends ? `2px solid ${theme.colors.terracotta}` : `1px solid ${theme.colors.borderLight}`,
+              backgroundColor: isPresetWeekdaysAndWeekends ? theme.colors.softPink : '#FAFAFA',
               textAlign: 'left',
               cursor: 'pointer',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
+              transition: 'all 0.15s ease',
             }}
           >
             <div>
-              <div style={{ fontWeight: 600, fontSize: '13px', color: theme.colors.textDark }}>
-                Weekdays 9–6 & Weekends 10–8
+              <div style={{ fontWeight: isPresetWeekdaysAndWeekends ? 700 : 600, fontSize: '13px', color: isPresetWeekdaysAndWeekends ? theme.colors.terracotta : theme.colors.textDark }}>
+                Weekdays 9–6 & Weekends 10–8 {isPresetWeekdaysAndWeekends && '✓'}
               </div>
               <div style={{ fontSize: '11px', color: theme.colors.textMuted }}>
                 Standard weekdays, extended weekend hours
               </div>
             </div>
-            <FaCalendarAlt style={{ color: theme.colors.terracotta }} />
+            <FaCalendarAlt style={{ color: isPresetWeekdaysAndWeekends ? theme.colors.terracotta : theme.colors.terracotta }} />
           </button>
 
           <button
             type="button"
             onClick={applyPreset247}
             style={{
-              padding: '10px 14px',
+              padding: '12px 14px',
               borderRadius: '10px',
-              border: `1px solid ${theme.colors.borderLight}`,
-              backgroundColor: '#FAFAFA',
+              border: isPreset247 ? `2px solid ${theme.colors.terracotta}` : `1px solid ${theme.colors.borderLight}`,
+              backgroundColor: isPreset247 ? theme.colors.softPink : '#FAFAFA',
               textAlign: 'left',
               cursor: 'pointer',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
+              transition: 'all 0.15s ease',
             }}
           >
             <div>
-              <div style={{ fontWeight: 600, fontSize: '13px', color: theme.colors.textDark }}>
-                Open 24/7
+              <div style={{ fontWeight: isPreset247 ? 700 : 600, fontSize: '13px', color: isPreset247 ? theme.colors.terracotta : theme.colors.textDark }}>
+                Open 24/7 {isPreset247 && '✓'}
               </div>
               <div style={{ fontSize: '11px', color: theme.colors.textMuted }}>
                 Open 24 hours every day of the week
               </div>
             </div>
-            <FaClock style={{ color: theme.colors.tan }} />
+            <FaClock style={{ color: isPreset247 ? theme.colors.terracotta : theme.colors.tan }} />
           </button>
         </div>
       )}
 
-      {/* Multi-day pill selector & quick group buttons */}
-      <div style={{ marginTop: '12px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-          <span style={{ fontSize: '12px', fontWeight: 600, color: theme.colors.textMuted }}>
-            Select day(s) to customize (multi-select enabled):
-          </span>
-          <div style={{ display: 'flex', gap: '4px' }}>
-            <button
-              type="button"
-              onClick={selectWeekdays}
-              style={{
-                fontSize: '10px',
-                fontWeight: 600,
-                color: theme.colors.terracotta,
-                backgroundColor: theme.colors.softPink,
-                border: 'none',
-                borderRadius: '6px',
-                padding: '2px 6px',
-                cursor: 'pointer',
-              }}
-            >
-              Weekdays
-            </button>
-            <button
-              type="button"
-              onClick={selectWeekends}
-              style={{
-                fontSize: '10px',
-                fontWeight: 600,
-                color: theme.colors.terracotta,
-                backgroundColor: theme.colors.softPink,
-                border: 'none',
-                borderRadius: '6px',
-                padding: '2px 6px',
-                cursor: 'pointer',
-              }}
-            >
-              Weekends
-            </button>
-            <button
-              type="button"
-              onClick={selectAllDays}
-              style={{
-                fontSize: '10px',
-                fontWeight: 600,
-                color: theme.colors.terracotta,
-                backgroundColor: theme.colors.softPink,
-                border: 'none',
-                borderRadius: '6px',
-                padding: '2px 6px',
-                cursor: 'pointer',
-              }}
-            >
-              All
-            </button>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px' }}>
-          {DAYS_OF_WEEK.map((day) => {
-            const isSelected = selectedDays.includes(day);
-
-            return (
+      {/* Multi-day pill selector & quick group buttons — ONLY in Custom Day-by-Day tab */}
+      {activeTab === 'edit' && (
+        <div style={{ marginTop: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: theme.colors.textMuted }}>
+              Select day(s) to customize:
+            </span>
+            <div style={{ display: 'flex', gap: '4px' }}>
               <button
-                key={day}
                 type="button"
-                onClick={() => {
-                  toggleDay(day);
-                  setActiveTab('edit');
-                }}
+                onClick={selectWeekdays}
                 style={{
-                  padding: '7px 13px',
-                  borderRadius: '20px',
-                  fontSize: '12px',
-                  fontWeight: isSelected ? 700 : 500,
-                  border: isSelected
-                    ? `1.5px solid ${theme.colors.terracotta}`
-                    : `1px solid ${theme.colors.borderLight}`,
-                  backgroundColor: isSelected ? theme.colors.softPink : '#ffffff',
-                  color: isSelected ? theme.colors.terracotta : theme.colors.textDark,
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  color: theme.colors.terracotta,
+                  backgroundColor: theme.colors.softPink,
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '2px 6px',
                   cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  transition: 'all 0.15s ease',
                 }}
               >
-                {DAY_LABELS[day].slice(0, 3)}
+                Weekdays
               </button>
-            );
-          })}
+              <button
+                type="button"
+                onClick={selectWeekends}
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  color: theme.colors.terracotta,
+                  backgroundColor: theme.colors.softPink,
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '2px 6px',
+                  cursor: 'pointer',
+                }}
+              >
+                Weekends
+              </button>
+              <button
+                type="button"
+                onClick={selectAllDays}
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  color: theme.colors.terracotta,
+                  backgroundColor: theme.colors.softPink,
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '2px 6px',
+                  cursor: 'pointer',
+                }}
+              >
+                All
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px' }}>
+            {DAYS_OF_WEEK.map((day) => {
+              const isSelected = selectedDays.includes(day);
+
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => {
+                    toggleDay(day);
+                  }}
+                  style={{
+                    padding: '7px 13px',
+                    borderRadius: '20px',
+                    fontSize: '12px',
+                    fontWeight: isSelected ? 700 : 500,
+                    border: isSelected
+                      ? `1.5px solid ${theme.colors.terracotta}`
+                      : `1px solid ${theme.colors.borderLight}`,
+                    backgroundColor: isSelected ? theme.colors.softPink : '#ffffff',
+                    color: isSelected ? theme.colors.terracotta : theme.colors.textDark,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {DAY_LABELS[day].slice(0, 3)}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Detailed Multi-Day Schedule Editor */}
       {activeTab === 'edit' && (

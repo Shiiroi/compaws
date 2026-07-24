@@ -5,9 +5,8 @@ import { theme } from '../../../shared/styles/theme';
 import { supabase } from '../../../shared/api/supabase-client';
 import type { WeeklyOperatingHours } from '../types/hours';
 import { StoreHoursFormInput } from './StoreHoursFormInput';
-import { UploadMenuPhotoModal } from './UploadMenuPhotoModal';
-import { getDefaultOperatingHours } from '../../../shared/utils/operating-hours';
 import type { MenuPhoto } from '../../../shared/types/pet-menu';
+import { getDeviceId } from '../../../shared/utils/device-id';
 
 interface PlaceAddedModalProps {
   placeId: string;
@@ -33,25 +32,80 @@ export const PlaceAddedModal: React.FC<PlaceAddedModalProps> = ({
 }) => {
   const [step, setStep] = useState<Step>('prompt');
 
-  // Hours state
-  const [petMenu, setPetMenu] = useState<'yes' | 'no' | 'not_sure'>('not_sure');
-  const [includeHours, setIncludeHours] = useState(!!autoHours);
+  // Hours & Pet menu state
+  const [petMenu, setPetMenu] = useState<'yes' | 'no' | null>(null);
   const [hours, setHours] = useState<WeeklyOperatingHours | null>(autoHours || null);
-  const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadedPhotos, setUploadedPhotos] = useState<MenuPhoto[]>([]);
+
+  // Inline photo upload state
+  const [photoCategory, setPhotoCategory] = useState<'pet_menu' | 'regular_menu'>('pet_menu');
+  const [photoCaption, setPhotoCaption] = useState('');
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isPhotoUploading, setIsPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setPhotoError('Please select a valid image file.');
+      return;
+    }
+    setPhotoError(null);
+    setSelectedFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFilePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUploadPhoto = async () => {
+    if (!filePreview || !selectedFile) return;
+    setIsPhotoUploading(true);
+    setPhotoError(null);
+
+    try {
+      const photoRecord: MenuPhoto = {
+        id: `photo-${crypto.randomUUID()}`,
+        url: filePreview,
+        category: photoCategory,
+        caption: photoCaption.trim() || undefined,
+        uploaded_at: new Date().toISOString(),
+        device_id: getDeviceId(),
+      };
+
+      const { error: rpcError } = await (supabase.rpc as any)('add_place_menu_photo', {
+        p_place_id: placeId,
+        p_photo: photoRecord as any,
+      });
+
+      if (rpcError) throw rpcError;
+
+      setUploadedPhotos((prev) => [...prev, photoRecord]);
+      setSelectedFile(null);
+      setFilePreview(null);
+      setPhotoCaption('');
+    } catch (err: any) {
+      setPhotoError(err.message || 'Failed to upload photo.');
+    } finally {
+      setIsPhotoUploading(false);
+    }
+  };
 
   const handleSaveDetails = async () => {
     setIsSaving(true);
     setSaveError(null);
     try {
       // Update pet menu vote if user picked something
-      if (petMenu !== 'not_sure') {
+      if (petMenu) {
         await (supabase.rpc as any)('create_pet_policy_report', {
           p_place_id: placeId,
-          p_device_id: (await import('../../../shared/utils/device-id')).getDeviceId(),
+          p_device_id: getDeviceId(),
           p_claim: null,
           p_pet_menu: petMenu,
           p_price_range: null,
@@ -60,7 +114,7 @@ export const PlaceAddedModal: React.FC<PlaceAddedModalProps> = ({
       }
 
       // Update operating hours if provided
-      if (includeHours && hours) {
+      if (hours) {
         await (supabase.rpc as any)('update_place_operating_hours', {
           p_place_id: placeId,
           p_operating_hours: hours as any,
@@ -75,6 +129,8 @@ export const PlaceAddedModal: React.FC<PlaceAddedModalProps> = ({
     }
   };
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+
   const modalContent = (
     <div
       style={{
@@ -87,24 +143,25 @@ export const PlaceAddedModal: React.FC<PlaceAddedModalProps> = ({
         backdropFilter: 'blur(4px)',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'flex-end',
+        justifyContent: isMobile ? 'flex-end' : 'center',
         alignItems: 'center',
         zIndex: 9999,
-        padding: '0 0 env(safe-area-inset-bottom, 0px) 0',
+        padding: isMobile ? '0 0 env(safe-area-inset-bottom, 0px) 0' : '20px',
       }}
     >
       <div
         style={{
           backgroundColor: '#ffffff',
-          borderRadius: '28px 28px 0 0',
-          padding: '24px 20px 32px',
+          borderRadius: isMobile ? '28px 28px 0 0' : '24px',
+          padding: isMobile ? '24px 20px 32px' : '28px 24px',
           width: '100%',
           maxWidth: '480px',
           fontFamily: theme.fonts.body,
           boxSizing: 'border-box',
-          boxShadow: '0 -10px 40px rgba(0,0,0,0.15)',
-          maxHeight: '90vh',
+          boxShadow: isMobile ? '0 -10px 40px rgba(0,0,0,0.15)' : '0 10px 40px rgba(0,0,0,0.2)',
+          maxHeight: isMobile ? '90vh' : '85vh',
           overflowY: 'auto',
+          position: 'relative',
         }}
       >
         {step === 'prompt' ? (
@@ -201,19 +258,29 @@ export const PlaceAddedModal: React.FC<PlaceAddedModalProps> = ({
 
             {/* Pet Menu Question */}
             <div style={{ marginBottom: '18px' }}>
-              <p style={{ fontSize: '13px', fontWeight: 700, color: theme.colors.textDark, margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <FaBone color={theme.colors.terracotta} size={14} /> Does this place have a pet menu?
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <p style={{ fontSize: '13px', fontWeight: 700, color: theme.colors.textDark, margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <FaBone color={theme.colors.terracotta} size={14} /> Does this place have a pet menu?
+                </p>
+                {petMenu && (
+                  <button
+                    type="button"
+                    onClick={() => setPetMenu(null)}
+                    style={{ background: 'none', border: 'none', color: theme.colors.notAllowed, fontSize: '11px', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 {[
                   { id: 'yes', label: 'Yes 🐾', icon: null },
                   { id: 'no', label: 'No', icon: <FaTimesCircle size={12} /> },
-                  { id: 'not_sure', label: 'Not Sure', icon: null },
                 ].map((opt) => (
                   <button
                     key={opt.id}
                     type="button"
-                    onClick={() => setPetMenu(opt.id as any)}
+                    onClick={() => setPetMenu(petMenu === opt.id ? null : (opt.id as any))}
                     style={{
                       padding: '10px 6px',
                       borderRadius: '12px',
@@ -236,74 +303,39 @@ export const PlaceAddedModal: React.FC<PlaceAddedModalProps> = ({
               </div>
             </div>
 
-            {/* Operating Hours */}
-            <div
-              style={{
-                marginBottom: '18px',
-                backgroundColor: includeHours ? theme.colors.softPink : '#FAFAFA',
-                borderRadius: '14px',
-                border: `1.5px solid ${includeHours ? theme.colors.terracotta : theme.colors.borderLight}`,
-                padding: '12px 14px',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <label
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <input
-                    type="checkbox"
-                    checked={includeHours}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setIncludeHours(checked);
-                      if (checked && !hours) setHours(getDefaultOperatingHours());
-                    }}
-                    style={{ width: '18px', height: '18px', accentColor: theme.colors.terracotta, cursor: 'pointer' }}
-                  />
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: theme.colors.textDark, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <FaClock size={13} color={theme.colors.terracotta} /> Add Operating Hours
-                  </span>
-                </div>
-                {autoHours && (
-                  <span style={{ fontSize: '10px', color: theme.colors.terracotta, fontWeight: 700 }}>Auto-filled from Google</span>
-                )}
-              </label>
-              {includeHours && (
-                <div style={{ marginTop: '12px' }}>
-                  <StoreHoursFormInput value={hours} onChange={setHours} />
+            {/* Operating Hours — direct input without redundant title */}
+            <div style={{ marginBottom: '18px' }}>
+              {(autoHours || hours) && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px', padding: '0 4px' }}>
+                  {autoHours ? (
+                    <span style={{ fontSize: '11px', color: theme.colors.terracotta, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <FaClock size={11} /> Auto-filled from Google Maps
+                    </span>
+                  ) : <span />}
+                  {hours && (
+                    <button
+                      type="button"
+                      onClick={() => setHours(null)}
+                      style={{ background: 'none', border: 'none', color: theme.colors.notAllowed, fontSize: '11px', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                    >
+                      Clear Hours
+                    </button>
+                  )}
                 </div>
               )}
+              <StoreHoursFormInput value={hours} onChange={setHours} />
             </div>
 
-            {/* Menu / Photo Upload */}
+            {/* Menu Photos Inline Upload */}
             <div style={{ marginBottom: '20px' }}>
               <p style={{ fontSize: '13px', fontWeight: 700, color: theme.colors.textDark, margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <FaCamera color={theme.colors.terracotta} size={14} /> Menu Photos
               </p>
+
               {uploadedPhotos.length > 0 && (
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: '8px',
-                    overflowX: 'auto',
-                    paddingBottom: '4px',
-                    marginBottom: '8px',
-                  }}
-                >
+                <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '10px' }}>
                   {uploadedPhotos.map((p) => (
-                    <div
-                      key={p.id}
-                      style={{
-                        width: '64px',
-                        height: '64px',
-                        borderRadius: '10px',
-                        overflow: 'hidden',
-                        flexShrink: 0,
-                        border: p.category === 'pet_menu' ? `2px solid ${theme.colors.terracotta}` : `1px solid ${theme.colors.borderLight}`,
-                        position: 'relative',
-                      }}
-                    >
+                    <div key={p.id} style={{ width: '64px', height: '64px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, border: p.category === 'pet_menu' ? `2px solid ${theme.colors.terracotta}` : `1px solid ${theme.colors.borderLight}`, position: 'relative' }}>
                       <img src={p.url} alt="Menu" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       {p.category === 'pet_menu' && (
                         <span style={{ position: 'absolute', bottom: '2px', right: '2px', fontSize: '10px' }}>🐾</span>
@@ -312,30 +344,135 @@ export const PlaceAddedModal: React.FC<PlaceAddedModalProps> = ({
                   ))}
                 </div>
               )}
-              <button
-                type="button"
-                onClick={() => setIsUploadOpen(true)}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  borderRadius: '12px',
-                  border: `1.5px dashed ${theme.colors.terracotta}`,
-                  backgroundColor: '#fffcfb',
-                  color: theme.colors.terracotta,
-                  fontWeight: 700,
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                }}
-              >
-                <FaCamera size={14} /> Upload Menu / Photo
-                <span style={{ fontSize: '11px', color: theme.colors.textMuted, fontWeight: 400 }}>
-                  (Menu board, pet menu, etc.)
-                </span>
-              </button>
+
+              {!filePreview ? (
+                <label
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    borderRadius: '12px',
+                    border: `1.5px dashed ${theme.colors.terracotta}`,
+                    backgroundColor: '#fffcfb',
+                    color: theme.colors.terracotta,
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
+                  <FaCamera size={14} /> Tap to add photo (Menu board, pet menu)
+                </label>
+              ) : (
+                <div style={{ padding: '12px', borderRadius: '14px', border: `1px solid ${theme.colors.softPink}`, backgroundColor: '#fffcfb', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <div style={{ width: '64px', height: '64px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
+                      <img src={filePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setPhotoCategory('pet_menu')}
+                          style={{
+                            flex: 1,
+                            padding: '6px 8px',
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            border: photoCategory === 'pet_menu' ? `1.5px solid ${theme.colors.terracotta}` : `1px solid ${theme.colors.borderLight}`,
+                            backgroundColor: photoCategory === 'pet_menu' ? theme.colors.softPink : '#ffffff',
+                            color: photoCategory === 'pet_menu' ? theme.colors.terracotta : theme.colors.textDark,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          🐾 Pet Menu
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPhotoCategory('regular_menu')}
+                          style={{
+                            flex: 1,
+                            padding: '6px 8px',
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            border: photoCategory === 'regular_menu' ? `1.5px solid ${theme.colors.terracotta}` : `1px solid ${theme.colors.borderLight}`,
+                            backgroundColor: photoCategory === 'regular_menu' ? theme.colors.softPink : '#ffffff',
+                            color: photoCategory === 'regular_menu' ? theme.colors.terracotta : theme.colors.textDark,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          🍽️ Regular Menu
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={photoCaption}
+                        onChange={(e) => setPhotoCaption(e.target.value)}
+                        placeholder="Caption (e.g. Pet drinks & treats)..."
+                        style={{
+                          padding: '6px 8px',
+                          borderRadius: '6px',
+                          border: `1px solid ${theme.colors.borderLight}`,
+                          fontSize: '12px',
+                          outline: 'none',
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {photoError && (
+                    <div style={{ color: theme.colors.notAllowed, fontSize: '11px', fontWeight: 500 }}>
+                      {photoError}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      type="button"
+                      onClick={handleUploadPhoto}
+                      disabled={isPhotoUploading}
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        borderRadius: '8px',
+                        backgroundColor: theme.colors.terracotta,
+                        color: '#ffffff',
+                        border: 'none',
+                        fontWeight: 700,
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {isPhotoUploading ? 'Uploading...' : 'Save Photo 🐾'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setFilePreview(null);
+                      }}
+                      disabled={isPhotoUploading}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        backgroundColor: '#ffffff',
+                        color: theme.colors.textMuted,
+                        border: `1px solid ${theme.colors.borderLight}`,
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Save / Done */}
@@ -382,19 +519,6 @@ export const PlaceAddedModal: React.FC<PlaceAddedModalProps> = ({
           </>
         )}
       </div>
-
-      {/* Photo Upload Sub-Modal */}
-      {isUploadOpen && placeId !== 'offline' && (
-        <UploadMenuPhotoModal
-          placeId={placeId}
-          placeName={placeName}
-          onClose={() => setIsUploadOpen(false)}
-          onSuccess={(photo) => {
-            setUploadedPhotos((prev) => [...prev, photo]);
-            setIsUploadOpen(false);
-          }}
-        />
-      )}
     </div>
   );
 

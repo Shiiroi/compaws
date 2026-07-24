@@ -36,7 +36,7 @@ export interface PlaceInBounds {
 
 export interface ReportItem {
   claim: 'allowed' | 'not_allowed' | 'outdoor_only';
-  pet_menu: 'yes' | 'no' | 'not_sure';
+  pet_menu: 'yes' | 'no' | 'not_sure' | null;
   price_range: 'budget' | 'mid' | 'splurge';
   notes: string | null;
   created_at: string;
