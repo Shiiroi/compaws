@@ -7,7 +7,7 @@ import type {
   WeeklyOperatingHours,
 } from '../types/hours';
 import { getDefaultOperatingHours } from '../../../shared/utils/operating-hours';
-import { FaClock, FaCalendarAlt, FaCheckCircle, FaPlus, FaTrash } from 'react-icons/fa';
+import { FaClock, FaCalendarAlt, FaCheckCircle, FaPlus, FaTrash, FaCheckSquare, FaRegSquare } from 'react-icons/fa';
 
 interface StoreHoursFormInputProps {
   value: WeeklyOperatingHours | null;
@@ -19,18 +19,44 @@ export const StoreHoursFormInput: React.FC<StoreHoursFormInputProps> = ({
   onChange,
 }) => {
   const hours = value || getDefaultOperatingHours();
-  const [selectedDay, setSelectedDay] = useState<DayOfWeek>('monday');
+  const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>(['monday']);
   const [activeTab, setActiveTab] = useState<'presets' | 'edit'>('presets');
 
-  const updateDaySchedule = (day: DayOfWeek, update: Partial<DaySchedule>) => {
-    const updatedDay: DaySchedule = {
-      ...hours[day],
-      ...update,
-    };
-    onChange({
-      ...hours,
-      [day]: updatedDay,
+  const toggleDay = (day: DayOfWeek) => {
+    setSelectedDays((prev) => {
+      if (prev.includes(day)) {
+        if (prev.length === 1) return prev; // keep at least 1 day selected
+        return prev.filter((d) => d !== day);
+      }
+      return [...prev, day];
     });
+  };
+
+  const selectWeekdays = () => {
+    setSelectedDays(['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
+    setActiveTab('edit');
+  };
+
+  const selectWeekends = () => {
+    setSelectedDays(['saturday', 'sunday']);
+    setActiveTab('edit');
+  };
+
+  const selectAllDays = () => {
+    setSelectedDays([...DAYS_OF_WEEK]);
+    setActiveTab('edit');
+  };
+
+  const updateSelectedDaysSchedule = (update: Partial<DaySchedule>) => {
+    const newHours = { ...hours };
+    selectedDays.forEach((day) => {
+      newHours[day] = {
+        ...newHours[day],
+        ...update,
+        slots: update.slots ? update.slots.map((s) => ({ ...s })) : newHours[day].slots,
+      };
+    });
+    onChange(newHours);
   };
 
   const applyPreset247 = () => {
@@ -73,33 +99,23 @@ export const StoreHoursFormInput: React.FC<StoreHoursFormInputProps> = ({
     onChange(newHours);
   };
 
-  const copySelectedDayToAll = () => {
-    const template = hours[selectedDay];
-    const newHours = { ...hours };
-    DAYS_OF_WEEK.forEach((day) => {
-      newHours[day] = {
-        ...template,
-        slots: template.slots ? template.slots.map((s) => ({ ...s })) : [],
-      };
-    });
-    onChange(newHours);
-  };
-
-  const currentSched = hours[selectedDay] || {
+  // Primary day used to populate input field values
+  const primaryDay = selectedDays[0] || 'monday';
+  const currentSched = hours[primaryDay] || {
     isClosed: false,
     is24Hours: false,
     slots: [{ open: '09:00', close: '18:00' }],
   };
 
   const addSlot = () => {
-    const slots = currentSched.slots ? [...currentSched.slots] : [];
+    const slots = currentSched.slots ? currentSched.slots.map((s) => ({ ...s })) : [];
     slots.push({ open: '17:00', close: '21:00' });
-    updateDaySchedule(selectedDay, { slots, isClosed: false, is24Hours: false });
+    updateSelectedDaysSchedule({ slots, isClosed: false, is24Hours: false });
   };
 
   const removeSlot = (index: number) => {
     const slots = (currentSched.slots || []).filter((_, i) => i !== index);
-    updateDaySchedule(selectedDay, { slots });
+    updateSelectedDaysSchedule({ slots });
   };
 
   const updateSlot = (index: number, field: 'open' | 'close', val: string) => {
@@ -107,9 +123,21 @@ export const StoreHoursFormInput: React.FC<StoreHoursFormInputProps> = ({
       if (i === index) {
         return { ...slot, [field]: val };
       }
-      return slot;
+      return { ...slot };
     });
-    updateDaySchedule(selectedDay, { slots });
+    updateSelectedDaysSchedule({ slots });
+  };
+
+  const formatSelectionHeader = () => {
+    if (selectedDays.length === 7) return 'All 7 Days (Mon–Sun)';
+    if (selectedDays.length === 5 && ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].every((d) => selectedDays.includes(d as DayOfWeek))) {
+      return 'All Weekdays (Mon–Fri)';
+    }
+    if (selectedDays.length === 2 && selectedDays.includes('saturday') && selectedDays.includes('sunday')) {
+      return 'Weekends (Sat & Sun)';
+    }
+    if (selectedDays.length === 1) return `${DAY_LABELS[selectedDays[0]]}`;
+    return `${selectedDays.map((d) => DAY_LABELS[d].slice(0, 3)).join(', ')} (${selectedDays.length} days selected)`;
   };
 
   return (
@@ -272,14 +300,67 @@ export const StoreHoursFormInput: React.FC<StoreHoursFormInputProps> = ({
         </div>
       )}
 
-      {/* Day pill selector */}
+      {/* Multi-day pill selector & quick group buttons */}
       <div style={{ marginTop: '12px' }}>
-        <div style={{ fontSize: '12px', fontWeight: 600, color: theme.colors.textMuted, marginBottom: '6px' }}>
-          Select day to view or customize:
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+          <span style={{ fontSize: '12px', fontWeight: 600, color: theme.colors.textMuted }}>
+            Select day(s) to customize (multi-select enabled):
+          </span>
+          <div style={{ display: 'flex', gap: '4px' }}>
+            <button
+              type="button"
+              onClick={selectWeekdays}
+              style={{
+                fontSize: '10px',
+                fontWeight: 600,
+                color: theme.colors.terracotta,
+                backgroundColor: theme.colors.softPink,
+                border: 'none',
+                borderRadius: '6px',
+                padding: '2px 6px',
+                cursor: 'pointer',
+              }}
+            >
+              Weekdays
+            </button>
+            <button
+              type="button"
+              onClick={selectWeekends}
+              style={{
+                fontSize: '10px',
+                fontWeight: 600,
+                color: theme.colors.terracotta,
+                backgroundColor: theme.colors.softPink,
+                border: 'none',
+                borderRadius: '6px',
+                padding: '2px 6px',
+                cursor: 'pointer',
+              }}
+            >
+              Weekends
+            </button>
+            <button
+              type="button"
+              onClick={selectAllDays}
+              style={{
+                fontSize: '10px',
+                fontWeight: 600,
+                color: theme.colors.terracotta,
+                backgroundColor: theme.colors.softPink,
+                border: 'none',
+                borderRadius: '6px',
+                padding: '2px 6px',
+                cursor: 'pointer',
+              }}
+            >
+              All
+            </button>
+          </div>
         </div>
+
         <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', paddingBottom: '6px' }}>
           {DAYS_OF_WEEK.map((day) => {
-            const isSelected = selectedDay === day;
+            const isSelected = selectedDays.includes(day);
             const sched = hours[day];
             const statusColor = sched?.isClosed
               ? theme.colors.notAllowed
@@ -292,7 +373,7 @@ export const StoreHoursFormInput: React.FC<StoreHoursFormInputProps> = ({
                 key={day}
                 type="button"
                 onClick={() => {
-                  setSelectedDay(day);
+                  toggleDay(day);
                   setActiveTab('edit');
                 }}
                 style={{
@@ -310,6 +391,11 @@ export const StoreHoursFormInput: React.FC<StoreHoursFormInputProps> = ({
                   whiteSpace: 'nowrap',
                 }}
               >
+                {isSelected ? (
+                  <FaCheckSquare size={11} style={{ color: theme.colors.terracotta }} />
+                ) : (
+                  <FaRegSquare size={11} style={{ color: theme.colors.textMuted }} />
+                )}
                 <span
                   style={{
                     width: '6px',
@@ -325,7 +411,7 @@ export const StoreHoursFormInput: React.FC<StoreHoursFormInputProps> = ({
         </div>
       </div>
 
-      {/* Detailed Day Editor */}
+      {/* Detailed Multi-Day Schedule Editor */}
       {activeTab === 'edit' && (
         <div
           style={{
@@ -337,31 +423,16 @@ export const StoreHoursFormInput: React.FC<StoreHoursFormInputProps> = ({
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <span style={{ fontWeight: 700, fontSize: '14px', color: theme.colors.textDark, fontFamily: theme.fonts.heading }}>
-              {DAY_LABELS[selectedDay]} Schedule
+            <span style={{ fontWeight: 700, fontSize: '13px', color: theme.colors.textDark, fontFamily: theme.fonts.heading }}>
+              Schedule for {formatSelectionHeader()}
             </span>
-            <button
-              type="button"
-              onClick={copySelectedDayToAll}
-              style={{
-                fontSize: '11px',
-                fontWeight: 600,
-                color: theme.colors.terracotta,
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                textDecoration: 'underline',
-              }}
-            >
-              Apply {DAY_LABELS[selectedDay]} to all days
-            </button>
           </div>
 
           {/* Day Status Mode */}
           <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
             <button
               type="button"
-              onClick={() => updateDaySchedule(selectedDay, { isClosed: false, is24Hours: false })}
+              onClick={() => updateSelectedDaysSchedule({ isClosed: false, is24Hours: false })}
               style={{
                 flex: 1,
                 padding: '6px 10px',
@@ -378,7 +449,7 @@ export const StoreHoursFormInput: React.FC<StoreHoursFormInputProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => updateDaySchedule(selectedDay, { isClosed: false, is24Hours: true, slots: [] })}
+              onClick={() => updateSelectedDaysSchedule({ isClosed: false, is24Hours: true, slots: [] })}
               style={{
                 flex: 1,
                 padding: '6px 10px',
@@ -395,7 +466,7 @@ export const StoreHoursFormInput: React.FC<StoreHoursFormInputProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => updateDaySchedule(selectedDay, { isClosed: true, is24Hours: false, slots: [] })}
+              onClick={() => updateSelectedDaysSchedule({ isClosed: true, is24Hours: false, slots: [] })}
               style={{
                 flex: 1,
                 padding: '6px 10px',
