@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
 import { theme } from '../../../shared/styles/theme';
-import {
+import { DAYS_OF_WEEK, DAY_LABELS } from '../types/hours';
+import type {
   DayOfWeek,
-  DAYS_OF_WEEK,
-  DAY_LABELS,
   DaySchedule,
-  TimeSlot,
   WeeklyOperatingHours,
 } from '../types/hours';
-import { formatTime24To12, getDefaultOperatingHours } from '../../../shared/utils/operating-hours';
-import { FaClock, FaCalendarAlt, FaCheckCircle, FaTimesCircle, FaPlus, FaTrash } from 'react-icons/fa';
+import { getDefaultOperatingHours } from '../../../shared/utils/operating-hours';
+import { FaClock, FaCalendarAlt, FaCheckCircle, FaPlus, FaTrash } from 'react-icons/fa';
 
 interface StoreHoursFormInputProps {
   value: WeeklyOperatingHours | null;

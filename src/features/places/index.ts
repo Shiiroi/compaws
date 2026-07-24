@@ -1,5 +1,6 @@
 export type { Place } from './types';
-export * from './types/hours';
+export type * from './types/hours';
+export { DAYS_OF_WEEK, DAY_LABELS, SHORT_DAY_LABELS } from './types/hours';
 export { searchGooglePlaces, getPlaceDetails, loadGoogleMapsScript } from './api/search-google-places';
 export { getPlacesInBounds } from './api/get-places-in-bounds';
 export { usePlacesInBounds } from './hooks/use-places-in-bounds';

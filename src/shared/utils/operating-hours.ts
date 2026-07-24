@@ -1,7 +1,9 @@
 import {
-  DayOfWeek,
   DAYS_OF_WEEK,
   DAY_LABELS,
+} from '../../features/places/types/hours';
+import type {
+  DayOfWeek,
   DaySchedule,
   OperatingStatus,
   TimeSlot,

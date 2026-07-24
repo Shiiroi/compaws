@@ -7,7 +7,7 @@ import { getConfidenceStyle } from '../../../shared/utils/confidence-color';
 import { StatusCard } from '../../../shared/components/StatusCard';
 import { StoreHoursView } from './StoreHoursView';
 import { EditStoreHoursModal } from './EditStoreHoursModal';
-import { WeeklyOperatingHours } from '../types/hours';
+import type { WeeklyOperatingHours } from '../types/hours';
 
 interface PlaceDetailProps {
   /** The selected place record data. Can be a DB place or a temporary geocoded ghost place. */

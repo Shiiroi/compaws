@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { theme } from '../../../shared/styles/theme';
-import { WeeklyOperatingHours } from '../types/hours';
+import type { WeeklyOperatingHours } from '../types/hours';
 import { StoreHoursFormInput } from './StoreHoursFormInput';
 import { supabase } from '../../../shared/api/supabase-client';
 import { getDefaultOperatingHours } from '../../../shared/utils/operating-hours';

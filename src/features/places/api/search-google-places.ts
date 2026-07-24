@@ -127,7 +127,7 @@ export async function searchGooglePlaces(
   }
 }
 
-import { WeeklyOperatingHours } from '../types/hours';
+import type { WeeklyOperatingHours } from '../types/hours';
 import { parseGoogleOpeningHours } from '../../../shared/utils/operating-hours';
 
 /**

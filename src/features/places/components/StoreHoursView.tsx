@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { theme } from '../../../shared/styles/theme';
-import { WeeklyOperatingHours, DAYS_OF_WEEK, DAY_LABELS, SHORT_DAY_LABELS } from '../types/hours';
+import { DAYS_OF_WEEK, DAY_LABELS } from '../types/hours';
+import type { WeeklyOperatingHours } from '../types/hours';
 import {
   formatDaySchedule,
   getCurrentDayOfWeek,
@@ -66,7 +67,6 @@ export const StoreHoursView: React.FC<StoreHoursViewProps> = ({ hours, onEditCli
   const currentDay = getCurrentDayOfWeek();
 
   let statusBadgeColor = theme.colors.allowed;
-  let statusBg = '#E8F5E9';
   let statusText = 'Open now';
 
   if (status.state === 'open') {
@@ -77,11 +77,9 @@ export const StoreHoursView: React.FC<StoreHoursViewProps> = ({ hours, onEditCli
     }
   } else if (status.state === 'closing_soon') {
     statusBadgeColor = theme.colors.tan;
-    statusBg = '#FFF3E0';
     statusText = `Closing soon • Closes at ${status.closesAt} (${status.minutesRemaining}m left)`;
   } else if (status.state === 'closed') {
     statusBadgeColor = theme.colors.notAllowed;
-    statusBg = '#FFEBEE';
     if (status.opensAt) {
       statusText = `Closed • Opens ${status.opensAt} (${status.opensDay || 'soon'})`;
     } else {
@@ -89,7 +87,6 @@ export const StoreHoursView: React.FC<StoreHoursViewProps> = ({ hours, onEditCli
     }
   } else if (status.state === 'opening_soon') {
     statusBadgeColor = theme.colors.tan;
-    statusBg = '#FFF3E0';
     statusText = `Opening soon • Opens at ${status.opensAt}`;
   }
 
