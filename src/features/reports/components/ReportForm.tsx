@@ -21,7 +21,7 @@ export const ReportForm: React.FC<ReportFormProps> = ({
   onTriggerNicknamePrompt,
 }) => {
   const [claim, setClaim] = useState<'allowed' | 'not_allowed' | 'outdoor_only'>('allowed');
-  const [petMenu, setPetMenu] = useState<'yes' | 'no' | 'unsure'>('unsure');
+  const [petMenu, setPetMenu] = useState<'yes' | 'no' | null>(null);
   const [priceRange, setPriceRange] = useState<'budget' | 'mid' | 'splurge'>('mid');
   const [reqDiaper, setReqDiaper] = useState(true);
   const [reqCaged, setReqCaged] = useState(false);
@@ -42,11 +42,8 @@ export const ReportForm: React.FC<ReportFormProps> = ({
 
     const formattedRequirements = reqs.join(', ');
 
-    // Map UI petMenu 'unsure' to database value 'not_sure'
-    const dbPetMenu = petMenu === 'unsure' ? 'not_sure' : petMenu;
-
     // Validate inputs using Zod
-    const validation = reportSchema.safeParse({ claim, pet_menu: dbPetMenu, price_range: priceRange, notes: formattedRequirements });
+    const validation = reportSchema.safeParse({ claim, pet_menu: petMenu, price_range: priceRange, notes: formattedRequirements });
     if (!validation.success) {
       setErrorMsg(validation.error.issues[0].message);
       setIsSubmitting(false);
@@ -59,7 +56,7 @@ export const ReportForm: React.FC<ReportFormProps> = ({
         place_id: place.id,
         device_id: deviceId,
         claim,
-        pet_menu: dbPetMenu,
+        pet_menu: petMenu,
         price_range: priceRange,
         notes: formattedRequirements,
       };
@@ -88,7 +85,7 @@ export const ReportForm: React.FC<ReportFormProps> = ({
             place_id: place.id,
             device_id: getDeviceId(),
             claim,
-            pet_menu: dbPetMenu,
+            pet_menu: petMenu,
             price_range: priceRange,
             notes: formattedRequirements,
           });
@@ -228,16 +225,6 @@ export const ReportForm: React.FC<ReportFormProps> = ({
                 onChange={() => setPetMenu('no')}
               />
               No (No special food options for pets)
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
-              <input
-                type="radio"
-                name="petMenu"
-                value="unsure"
-                checked={petMenu === 'unsure'}
-                onChange={() => setPetMenu('unsure')}
-              />
-              Unsure
             </label>
           </div>
         </div>

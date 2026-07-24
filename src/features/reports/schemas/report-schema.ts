@@ -5,7 +5,7 @@ import { z } from 'zod';
  */
 export const reportSchema = z.object({
   claim: z.enum(['allowed', 'not_allowed', 'outdoor_only']),
-  pet_menu: z.enum(['yes', 'no', 'not_sure']),
+  pet_menu: z.enum(['yes', 'no']).nullable().optional(),
   price_range: z.enum(['budget', 'mid', 'splurge']),
   notes: z
     .string()

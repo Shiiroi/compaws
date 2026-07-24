@@ -56,7 +56,6 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
   const petMenuLabels: Record<string, string> = {
     yes: 'Has Pet Menu',
     no: 'No Pet Menu',
-    not_sure: 'Unsure',
   };
 
   const priceRangeLabels: Record<string, string> = {
@@ -75,9 +74,10 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
   const [isEditHoursOpen, setIsEditHoursOpen] = useState(false);
   const [localHours, setLocalHours] = useState<WeeklyOperatingHours | null | undefined>(dbPlace?.operating_hours);
   const [isUploadPhotoOpen, setIsUploadPhotoOpen] = useState(false);
-  const [petMenuVote, setPetMenuVote] = useState<'yes' | 'no' | 'not_sure' | null>(null);
+  const [petMenuVote, setPetMenuVote] = useState<'yes' | 'no' | null>(null);
   const [isPetMenuModalOpen, setIsPetMenuModalOpen] = useState(false);
   const [isPetMenuSubmitting, setIsPetMenuSubmitting] = useState(false);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
 
   useEffect(() => {
     setLocalHours(dbPlace?.operating_hours);
@@ -690,26 +690,49 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
             backgroundColor: 'rgba(0,0,0,0.5)',
             backdropFilter: 'blur(4px)',
             display: 'flex',
-            alignItems: 'flex-end',
+            alignItems: isMobile ? 'flex-end' : 'center',
             justifyContent: 'center',
             zIndex: 9999,
+            padding: isMobile ? 0 : '20px',
           }}
           onClick={() => setIsPetMenuModalOpen(false)}
         >
           <div
             style={{
               backgroundColor: '#ffffff',
-              borderRadius: '24px 24px 0 0',
-              padding: '24px 20px 36px',
+              borderRadius: isMobile ? '24px 24px 0 0' : '20px',
+              padding: isMobile ? '24px 20px 36px' : '28px 24px',
               width: '100%',
-              maxWidth: '480px',
+              maxWidth: '440px',
               boxSizing: 'border-box',
-              boxShadow: '0 -8px 32px rgba(0,0,0,0.15)',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+              position: 'relative',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Handle */}
-            <div style={{ width: '36px', height: '4px', borderRadius: '2px', backgroundColor: '#e5e7eb', margin: '0 auto 20px' }} />
+            {isMobile ? (
+              /* Handle for mobile bottom sheet */
+              <div style={{ width: '36px', height: '4px', borderRadius: '2px', backgroundColor: '#e5e7eb', margin: '0 auto 20px' }} />
+            ) : (
+              /* Close button for desktop modal */
+              <button
+                type="button"
+                onClick={() => setIsPetMenuModalOpen(false)}
+                style={{
+                  position: 'absolute',
+                  top: '16px',
+                  right: '16px',
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '20px',
+                  cursor: 'pointer',
+                  color: theme.colors.textMuted,
+                  lineHeight: 1,
+                }}
+              >
+                &times;
+              </button>
+            )}
 
             <h3 style={{ fontSize: '18px', fontWeight: 800, margin: '0 0 6px 0', color: theme.colors.textDark, fontFamily: theme.fonts.heading, display: 'flex', alignItems: 'center', gap: '6px' }}>
               <FaBone color={theme.colors.terracotta} size={16} /> Pet Menu?
@@ -718,11 +741,10 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
               Does <strong>{dbPlace.name}</strong> have a dedicated pet menu (treats, puppuccinos, etc.)?
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '18px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '18px' }}>
               {[
-                { id: 'yes', label: 'Yes 🐾', sub: 'Has pet menu', icon: null },
-                { id: 'no', label: 'No', sub: 'None offered', icon: <FaTimesCircle size={12} /> },
-                { id: 'not_sure', label: 'Not Sure', sub: 'Unsure', icon: <FaQuestionCircle size={12} /> },
+                { id: 'yes', label: 'Yes 🐾', sub: 'Offers pet menu', icon: null },
+                { id: 'no', label: 'No', sub: 'No pet menu offered', icon: <FaTimesCircle size={12} /> },
               ].map((opt) => (
                 <button
                   key={opt.id}

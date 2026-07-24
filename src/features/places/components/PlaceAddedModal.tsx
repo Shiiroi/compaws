@@ -6,7 +6,6 @@ import { supabase } from '../../../shared/api/supabase-client';
 import type { WeeklyOperatingHours } from '../types/hours';
 import { StoreHoursFormInput } from './StoreHoursFormInput';
 import { UploadMenuPhotoModal } from './UploadMenuPhotoModal';
-import { getDefaultOperatingHours } from '../../../shared/utils/operating-hours';
 import type { MenuPhoto } from '../../../shared/types/pet-menu';
 
 interface PlaceAddedModalProps {
@@ -33,9 +32,8 @@ export const PlaceAddedModal: React.FC<PlaceAddedModalProps> = ({
 }) => {
   const [step, setStep] = useState<Step>('prompt');
 
-  // Hours state
-  const [petMenu, setPetMenu] = useState<'yes' | 'no' | 'not_sure'>('not_sure');
-  const [includeHours, setIncludeHours] = useState(!!autoHours);
+  // Hours & Pet menu state
+  const [petMenu, setPetMenu] = useState<'yes' | 'no' | null>(null);
   const [hours, setHours] = useState<WeeklyOperatingHours | null>(autoHours || null);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadedPhotos, setUploadedPhotos] = useState<MenuPhoto[]>([]);
@@ -48,7 +46,7 @@ export const PlaceAddedModal: React.FC<PlaceAddedModalProps> = ({
     setSaveError(null);
     try {
       // Update pet menu vote if user picked something
-      if (petMenu !== 'not_sure') {
+      if (petMenu) {
         await (supabase.rpc as any)('create_pet_policy_report', {
           p_place_id: placeId,
           p_device_id: (await import('../../../shared/utils/device-id')).getDeviceId(),
@@ -60,7 +58,7 @@ export const PlaceAddedModal: React.FC<PlaceAddedModalProps> = ({
       }
 
       // Update operating hours if provided
-      if (includeHours && hours) {
+      if (hours) {
         await (supabase.rpc as any)('update_place_operating_hours', {
           p_place_id: placeId,
           p_operating_hours: hours as any,
@@ -201,19 +199,29 @@ export const PlaceAddedModal: React.FC<PlaceAddedModalProps> = ({
 
             {/* Pet Menu Question */}
             <div style={{ marginBottom: '18px' }}>
-              <p style={{ fontSize: '13px', fontWeight: 700, color: theme.colors.textDark, margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <FaBone color={theme.colors.terracotta} size={14} /> Does this place have a pet menu?
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <p style={{ fontSize: '13px', fontWeight: 700, color: theme.colors.textDark, margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <FaBone color={theme.colors.terracotta} size={14} /> Does this place have a pet menu?
+                </p>
+                {petMenu && (
+                  <button
+                    type="button"
+                    onClick={() => setPetMenu(null)}
+                    style={{ background: 'none', border: 'none', color: theme.colors.notAllowed, fontSize: '11px', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 {[
                   { id: 'yes', label: 'Yes 🐾', icon: null },
                   { id: 'no', label: 'No', icon: <FaTimesCircle size={12} /> },
-                  { id: 'not_sure', label: 'Not Sure', icon: null },
                 ].map((opt) => (
                   <button
                     key={opt.id}
                     type="button"
-                    onClick={() => setPetMenu(opt.id as any)}
+                    onClick={() => setPetMenu(petMenu === opt.id ? null : (opt.id as any))}
                     style={{
                       padding: '10px 6px',
                       borderRadius: '12px',
@@ -236,44 +244,28 @@ export const PlaceAddedModal: React.FC<PlaceAddedModalProps> = ({
               </div>
             </div>
 
-            {/* Operating Hours */}
-            <div
-              style={{
-                marginBottom: '18px',
-                backgroundColor: includeHours ? theme.colors.softPink : '#FAFAFA',
-                borderRadius: '14px',
-                border: `1.5px solid ${includeHours ? theme.colors.terracotta : theme.colors.borderLight}`,
-                padding: '12px 14px',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <label
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <input
-                    type="checkbox"
-                    checked={includeHours}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setIncludeHours(checked);
-                      if (checked && !hours) setHours(getDefaultOperatingHours());
-                    }}
-                    style={{ width: '18px', height: '18px', accentColor: theme.colors.terracotta, cursor: 'pointer' }}
-                  />
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: theme.colors.textDark, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <FaClock size={13} color={theme.colors.terracotta} /> Add Operating Hours
-                  </span>
+            {/* Operating Hours — direct input without toggle */}
+            <div style={{ marginBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: theme.colors.textDark, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <FaClock size={13} color={theme.colors.terracotta} /> Operating Hours (Optional)
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {autoHours && (
+                    <span style={{ fontSize: '10px', color: theme.colors.terracotta, fontWeight: 700 }}>Auto-filled from Google</span>
+                  )}
+                  {hours && (
+                    <button
+                      type="button"
+                      onClick={() => setHours(null)}
+                      style={{ background: 'none', border: 'none', color: theme.colors.notAllowed, fontSize: '11px', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                    >
+                      Clear Hours
+                    </button>
+                  )}
                 </div>
-                {autoHours && (
-                  <span style={{ fontSize: '10px', color: theme.colors.terracotta, fontWeight: 700 }}>Auto-filled from Google</span>
-                )}
-              </label>
-              {includeHours && (
-                <div style={{ marginTop: '12px' }}>
-                  <StoreHoursFormInput value={hours} onChange={setHours} />
-                </div>
-              )}
+              </div>
+              <StoreHoursFormInput value={hours} onChange={setHours} />
             </div>
 
             {/* Menu / Photo Upload */}
