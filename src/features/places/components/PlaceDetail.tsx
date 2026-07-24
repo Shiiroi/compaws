@@ -43,8 +43,6 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
   isGhost = false,
   onClose,
   reports,
-  isLoading: _isLoading,
-  error: _error,
   onReportClick,
   onFlagClick,
   onAddPlaceClick,
