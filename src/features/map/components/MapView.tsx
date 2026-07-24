@@ -195,6 +195,33 @@ const MapController: React.FC<{ center: [number, number] | null }> = ({ center }
   return null;
 };
 
+const ClusterMarker: React.FC<{
+  lat: number;
+  lng: number;
+  count: number;
+  places?: PlaceInBounds[];
+  onSelectPlace: (place: PlaceInBounds) => void;
+}> = ({ lat, lng, count, places, onSelectPlace }) => {
+  const map = useMap();
+
+  const handleClick = () => {
+    const currentZoom = map.getZoom();
+    if (currentZoom < 17) {
+      map.setView([lat, lng], currentZoom + 2);
+    } else if (places && places.length > 0) {
+      onSelectPlace(places[0]);
+    }
+  };
+
+  return (
+    <Marker
+      position={[lat, lng]}
+      icon={createClusterIcon(count)}
+      eventHandlers={{ click: handleClick }}
+    />
+  );
+};
+
 /**
  * Main styled Leaflet Map view drawing places and cluster centroids.
  */
@@ -323,10 +350,13 @@ export const MapView: React.FC<MapViewProps> = ({
         {clusters.map((node, idx) => {
           if (node.isCluster) {
             return (
-              <Marker
+              <ClusterMarker
                 key={`cluster-${idx}`}
-                position={[node.lat, node.lng]}
-                icon={createClusterIcon(node.count)}
+                lat={node.lat}
+                lng={node.lng}
+                count={node.count}
+                places={node.places}
+                onSelectPlace={onSelectPlace}
               />
             );
           } else if (node.place) {
