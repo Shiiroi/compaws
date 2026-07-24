@@ -8,7 +8,9 @@ import { PlaceSearchBar } from './PlaceSearchBar';
 import { getPlaceDetails } from '../api/search-google-places';
 import { ProvinceCombobox } from './ProvinceCombobox';
 import { StoreHoursFormInput } from './StoreHoursFormInput';
+import { PetMenuFormInput } from './PetMenuFormInput';
 import type { WeeklyOperatingHours } from '../types/hours';
+import type { PetMenuDetails } from '../../../shared/types/pet-menu';
 import { getDefaultOperatingHours } from '../../../shared/utils/operating-hours';
 
 interface AddPlaceFormProps {
@@ -81,6 +83,12 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
   const [reqStroller, setReqStroller] = useState(false);
   const [operatingHours, setOperatingHours] = useState<WeeklyOperatingHours | null>(null);
   const [includeStoreHours, setIncludeStoreHours] = useState(false);
+  const [includePetMenuDetails, setIncludePetMenuDetails] = useState(false);
+  const [petMenuDetails, setPetMenuDetails] = useState<PetMenuDetails>({
+    has_pet_menu: 'yes',
+    items: [],
+    notes: '',
+  });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -193,6 +201,17 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
 
       if (error) throw error;
       if (!newPlaceId) throw new Error('Transaction returned empty response.');
+
+      if (includePetMenuDetails && newPlaceId) {
+        try {
+          await (supabase.rpc as any)('update_place_pet_menu', {
+            p_place_id: newPlaceId,
+            p_pet_menu_details: petMenuDetails as any,
+          });
+        } catch (menuErr) {
+          console.warn('[Pet Menu RPC Warning]:', menuErr);
+        }
+      }
 
       // 5. Trigger nickname prompt overlay if needed
       triggerNicknamePromptFlow();
@@ -601,6 +620,25 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
                 Unsure
               </label>
             </div>
+
+            {petMenu === 'yes' && (
+              <div style={{ marginTop: '12px', borderTop: `1px dashed ${theme.colors.softPink}`, paddingTop: '12px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: theme.colors.terracotta, marginBottom: '8px' }}>
+                  <input
+                    type="checkbox"
+                    checked={includePetMenuDetails}
+                    onChange={(e) => setIncludePetMenuDetails(e.target.checked)}
+                  />
+                  Add Pet Menu Items / Offerings Details 🦴
+                </label>
+                {includePetMenuDetails && (
+                  <PetMenuFormInput
+                    value={petMenuDetails}
+                    onChange={setPetMenuDetails}
+                  />
+                )}
+              </div>
+            )}
           </div>
 
           <div style={{ marginBottom: '20px', borderTop: '1px solid #eee', paddingTop: '12px' }}>

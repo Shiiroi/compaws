@@ -7,7 +7,10 @@ import { getConfidenceStyle } from '../../../shared/utils/confidence-color';
 import { StatusCard } from '../../../shared/components/StatusCard';
 import { StoreHoursView } from './StoreHoursView';
 import { EditStoreHoursModal } from './EditStoreHoursModal';
+import { PetMenuView } from './PetMenuView';
+import { EditPetMenuModal } from './EditPetMenuModal';
 import type { WeeklyOperatingHours } from '../types/hours';
+import type { PetMenuDetails } from '../../../shared/types/pet-menu';
 
 interface PlaceDetailProps {
   /** The selected place record data. Can be a DB place or a temporary geocoded ghost place. */
@@ -80,9 +83,13 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
   const [isEditHoursOpen, setIsEditHoursOpen] = useState(false);
   const [localHours, setLocalHours] = useState<WeeklyOperatingHours | null | undefined>(dbPlace?.operating_hours);
 
+  const [isEditMenuOpen, setIsEditMenuOpen] = useState(false);
+  const [localMenuDetails, setLocalMenuDetails] = useState<PetMenuDetails | null | undefined>(dbPlace?.pet_menu_details);
+
   useEffect(() => {
     setLocalHours(dbPlace?.operating_hours);
-  }, [dbPlace?.operating_hours]);
+    setLocalMenuDetails(dbPlace?.pet_menu_details);
+  }, [dbPlace?.operating_hours, dbPlace?.pet_menu_details]);
 
   return (
     <div
@@ -209,10 +216,17 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
         </p>
 
         {!isGhost && (
-          <StoreHoursView
-            hours={localHours}
-            onEditClick={dbPlace ? () => setIsEditHoursOpen(true) : undefined}
-          />
+          <>
+            <StoreHoursView
+              hours={localHours}
+              onEditClick={dbPlace ? () => setIsEditHoursOpen(true) : undefined}
+            />
+            <PetMenuView
+              details={localMenuDetails}
+              petMenuClaim={dbPlace?.pet_menu}
+              onEditClick={dbPlace ? () => setIsEditMenuOpen(true) : undefined}
+            />
+          </>
         )}
       </div>
 
@@ -673,6 +687,16 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
           initialHours={localHours}
           onClose={() => setIsEditHoursOpen(false)}
           onSuccess={(updated) => setLocalHours(updated)}
+        />
+      )}
+
+      {isEditMenuOpen && dbPlace && (
+        <EditPetMenuModal
+          placeId={dbPlace.id}
+          placeName={dbPlace.name}
+          initialDetails={localMenuDetails}
+          onClose={() => setIsEditMenuOpen(false)}
+          onSuccess={(updated) => setLocalMenuDetails(updated)}
         />
       )}
     </div>
