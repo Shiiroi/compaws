@@ -13,7 +13,7 @@
     "reset-users": "node scripts/reset-db.mjs users"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.110.5",
+    "@supabase/supabase-js": "^2.110.8",
     "@tanstack/query-sync-storage-persister": "^5.101.2",
     "@tanstack/react-query": "^5.101.2",
     "@tanstack/react-query-persist-client": "^5.101.2",
