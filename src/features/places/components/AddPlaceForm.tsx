@@ -6,6 +6,8 @@ import { addPendingReport } from '../../../shared/outbox/outbox-db';
 import { PlaceSearchBar } from './PlaceSearchBar';
 import { getPlaceDetails } from '../api/search-google-places';
 import { CityCombobox } from './CityCombobox';
+import { StoreHoursFormInput } from './StoreHoursFormInput';
+import type { WeeklyOperatingHours } from '../types/hours';
 
 interface AddPlaceFormProps {
   onClose: () => void;
@@ -74,6 +76,7 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
   const [reqDiaper, setReqDiaper] = useState(true);
   const [reqCaged, setReqCaged] = useState(false);
   const [reqStroller, setReqStroller] = useState(false);
+  const [operatingHours, setOperatingHours] = useState<WeeklyOperatingHours | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -90,9 +93,16 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
     });
   };
 
-  const handleSelectSearch = (lat: number, lng: number, name: string, address: string) => {
+  const handleSelectSearch = (
+    lat: number,
+    lng: number,
+    name: string,
+    address: string,
+    hours?: WeeklyOperatingHours | null
+  ) => {
     setSelectedPlace({ id: `custom-${uuidv4()}`, name, address, lat, lng });
     setCity(extractCityFromAddress(address));
+    if (hours) setOperatingHours(hours);
     setErrorMsg(null);
   };
 
@@ -127,6 +137,9 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
         if (details) {
           resolvedLat = details.lat;
           resolvedLng = details.lng;
+          if (details.openingHours && !operatingHours) {
+            setOperatingHours(details.openingHours);
+          }
         } else {
           throw new Error('Coordinates could not be resolved from search results.');
         }
@@ -155,6 +168,7 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
         p_pet_menu: dbPetMenu,
         p_price_range: priceRange,
         p_notes: formattedRequirements,
+        p_operating_hours: operatingHours as any,
       });
 
       if (error) throw error;
@@ -382,6 +396,9 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
               })}
             </div>
           </div>
+
+          {/* Store Hours Input Component */}
+          <StoreHoursFormInput value={operatingHours} onChange={setOperatingHours} />
 
           <div style={{ marginBottom: '16px', borderTop: '1px solid #eee', paddingTop: '12px' }}>
             <label style={{ display: 'block', fontWeight: 600, marginBottom: '8px', fontSize: '14px' }}>

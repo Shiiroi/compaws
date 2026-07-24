@@ -127,17 +127,20 @@ export async function searchGooglePlaces(
   }
 }
 
+import { WeeklyOperatingHours } from '../types/hours';
+import { parseGoogleOpeningHours } from '../../../shared/utils/operating-hours';
+
 /**
- * Fetches coordinates for a single chosen place ID.
+ * Fetches coordinates and opening hours for a single chosen place ID.
  * 
  * @param {string} placeId - Selected Google Place ID.
  * @param {any} sessionToken - Active AutocompleteSessionToken.
- * @returns {Promise<{ lat: number, lng: number } | null>} Coordinates payload.
+ * @returns {Promise<{ lat: number; lng: number; openingHours?: WeeklyOperatingHours | null } | null>} Place details payload.
  */
 export async function getPlaceDetails(
   placeId: string,
   sessionToken?: any
-): Promise<{ lat: number; lng: number } | null> {
+): Promise<{ lat: number; lng: number; openingHours?: WeeklyOperatingHours | null } | null> {
   const hasGoogleSDK = typeof window !== 'undefined' && (window as any).google?.maps;
   if (!hasGoogleSDK) {
     return null;
@@ -148,7 +151,7 @@ export async function getPlaceDetails(
     const place = new Place({ id: placeId });
     
     await place.fetchFields({
-      fields: ['location'],
+      fields: ['location', 'regularOpeningHours'],
       sessionToken,
     });
 
@@ -156,9 +159,14 @@ export async function getPlaceDetails(
       return null;
     }
 
+    const parsedHours = place.regularOpeningHours
+      ? parseGoogleOpeningHours(place.regularOpeningHours)
+      : null;
+
     return {
       lat: place.location.lat(),
       lng: place.location.lng(),
+      openingHours: parsedHours,
     };
   } catch (err) {
     console.error('[Google Details Query Failed]:', err);

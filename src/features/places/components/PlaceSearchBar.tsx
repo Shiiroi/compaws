@@ -7,13 +7,15 @@ import {
 } from '../api/search-google-places';
 import type { PlaceInBounds } from '../../../shared/types/geo';
 
+import type { WeeklyOperatingHours } from '../types/hours';
+
 interface PlaceSearchBarProps {
   /** The list of places currently loaded in the map bounds for local filtering. */
   loadedPlaces: PlaceInBounds[];
   /** Callback triggered when a local pin is selected. */
   onSelectLocalPlace: (place: PlaceInBounds) => void;
   /** Callback triggered when an external location is selected to center the map. */
-  onSelectGeocodePlace: (lat: number, lng: number, name: string, address: string) => void;
+  onSelectGeocodePlace: (lat: number, lng: number, name: string, address: string, openingHours?: WeeklyOperatingHours | null) => void;
   /** Optional custom container style overrides (e.g. for form modals). */
   containerStyle?: React.CSSProperties;
 }
@@ -94,13 +96,15 @@ export const PlaceSearchBar: React.FC<PlaceSearchBarProps> = ({
   const handleSelectGeocode = async (res: GeocodingResult) => {
     let lat = res.lat;
     let lng = res.lng;
+    let openingHours: WeeklyOperatingHours | null | undefined = null;
 
-    // If it's a Google prediction, lazy-resolve coordinates upon click
+    // If it's a Google prediction, lazy-resolve coordinates and hours upon click
     if (lat === undefined || lng === undefined) {
       const coords = await getPlaceDetails(res.id, sessionTokenRef.current);
       if (coords) {
         lat = coords.lat;
         lng = coords.lng;
+        openingHours = coords.openingHours;
       }
     }
 
@@ -108,7 +112,7 @@ export const PlaceSearchBar: React.FC<PlaceSearchBarProps> = ({
     sessionTokenRef.current = null;
 
     if (lat !== undefined && lng !== undefined) {
-      onSelectGeocodePlace(lat, lng, res.displayName, res.address);
+      onSelectGeocodePlace(lat, lng, res.displayName, res.address, openingHours);
     }
     setQuery(res.displayName);
     setIsOpen(false);

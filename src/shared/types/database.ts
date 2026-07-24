@@ -154,6 +154,7 @@ export type Database = {
           geom: unknown
           id: string
           name: string
+          operating_hours: Json | null
           province: string | null
           status: string
           updated_at: string
@@ -167,6 +168,7 @@ export type Database = {
           geom: unknown
           id?: string
           name: string
+          operating_hours?: Json | null
           province?: string | null
           status?: string
           updated_at?: string
@@ -180,6 +182,7 @@ export type Database = {
           geom?: unknown
           id?: string
           name?: string
+          operating_hours?: Json | null
           province?: string | null
           status?: string
           updated_at?: string

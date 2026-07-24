@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaBone } from 'react-icons/fa';
 import { theme } from '../../../shared/styles/theme';
 import { type PlaceInBounds, type ReportItem } from '../../../shared/types/geo';
 import { getDeviceId } from '../../../shared/utils/device-id';
 import { getConfidenceStyle } from '../../../shared/utils/confidence-color';
 import { StatusCard } from '../../../shared/components/StatusCard';
+import { StoreHoursView } from './StoreHoursView';
+import { EditStoreHoursModal } from './EditStoreHoursModal';
+import { WeeklyOperatingHours } from '../types/hours';
 
 interface PlaceDetailProps {
   /** The selected place record data. Can be a DB place or a temporary geocoded ghost place. */
@@ -74,6 +77,12 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
   };
 
   const dbPlace = !isGhost ? (place as PlaceInBounds) : null;
+  const [isEditHoursOpen, setIsEditHoursOpen] = useState(false);
+  const [localHours, setLocalHours] = useState<WeeklyOperatingHours | null | undefined>(dbPlace?.operating_hours);
+
+  useEffect(() => {
+    setLocalHours(dbPlace?.operating_hours);
+  }, [dbPlace?.operating_hours]);
 
   return (
     <div
@@ -198,6 +207,13 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
         <p style={{ fontSize: '13px', color: theme.colors.textMuted, margin: '0' }}>
           {place.address}
         </p>
+
+        {!isGhost && (
+          <StoreHoursView
+            hours={localHours}
+            onEditClick={dbPlace ? () => setIsEditHoursOpen(true) : undefined}
+          />
+        )}
       </div>
 
       {isGhost ? (
@@ -648,6 +664,16 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
             </button>
           </div>
         </>
+      )}
+
+      {isEditHoursOpen && dbPlace && (
+        <EditStoreHoursModal
+          placeId={dbPlace.id}
+          placeName={dbPlace.name}
+          initialHours={localHours}
+          onClose={() => setIsEditHoursOpen(false)}
+          onSuccess={(updated) => setLocalHours(updated)}
+        />
       )}
     </div>
   );
