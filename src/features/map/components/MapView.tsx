@@ -37,7 +37,41 @@ interface SuperclusterPointProps {
 const MANILA_CENTER: [number, number] = [120.9842, 14.5995]; // [lng, lat] for MapLibre GL
 const DEFAULT_ZOOM = 12;
 
-// MapLibre GL Satellite style definition
+// Native MapLibre GL v8 Style Specifications
+const DEFAULT_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {
+    'carto-voyager': {
+      type: 'raster',
+      tiles: ['https://cartodb-basemaps-a.global.ssl.fastly.net/rastertiles/voyager/{z}/{x}/{y}{r}.png'],
+      tileSize: 256,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    },
+    'carto-labels': {
+      type: 'raster',
+      tiles: ['https://cartodb-basemaps-a.global.ssl.fastly.net/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png'],
+      tileSize: 256,
+    },
+  },
+  layers: [
+    { id: 'carto-voyager-base', type: 'raster', source: 'carto-voyager' },
+    { id: 'carto-labels-overlay', type: 'raster', source: 'carto-labels' },
+  ],
+};
+
+const OSM_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {
+    'osm-tiles': {
+      type: 'raster',
+      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      tileSize: 256,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    },
+  },
+  layers: [{ id: 'osm-tiles-layer', type: 'raster', source: 'osm-tiles' }],
+};
+
 const SATELLITE_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
@@ -64,13 +98,13 @@ const TILE_STYLES = [
     id: 'default',
     label: 'Default',
     Icon: FaMap,
-    style: 'https://tiles.openfreemap.org/styles/liberty',
+    style: DEFAULT_STYLE,
   },
   {
     id: 'osm',
     label: 'Detailed',
     Icon: FaCity,
-    style: 'https://tiles.openfreemap.org/styles/bright',
+    style: OSM_STYLE,
   },
   {
     id: 'satellite',
