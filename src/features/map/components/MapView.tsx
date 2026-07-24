@@ -338,8 +338,8 @@ export const MapView: React.FC<MapViewProps> = ({
   // Initialize Supercluster instance using screen-pixel distance clustering
   const supercluster = useMemo(() => {
     const sc = new Supercluster<SuperclusterPointProps>({
-      radius: 25, // Small radius in screen pixels so only touching markers cluster
-      maxZoom: 12, // Stop clustering at zoom 12+ so city view shows individual pins!
+      radius: 50, // Standard screen-pixel cluster radius
+      maxZoom: 16, // Cluster up to zoom level 16, separating when zooming in
     });
 
     const points = places.map((place) => ({
