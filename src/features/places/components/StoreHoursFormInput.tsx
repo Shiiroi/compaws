@@ -7,7 +7,7 @@ import type {
   WeeklyOperatingHours,
 } from '../types/hours';
 import { getDefaultOperatingHours } from '../../../shared/utils/operating-hours';
-import { FaClock, FaCalendarAlt, FaCheckCircle, FaPlus, FaTrash, FaCheckSquare, FaRegSquare } from 'react-icons/fa';
+import { FaClock, FaCalendarAlt, FaCheckCircle, FaPlus, FaTrash } from 'react-icons/fa';
 
 interface StoreHoursFormInputProps {
   value: WeeklyOperatingHours | null;
@@ -358,15 +358,9 @@ export const StoreHoursFormInput: React.FC<StoreHoursFormInputProps> = ({
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', paddingBottom: '6px' }}>
+        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px' }}>
           {DAYS_OF_WEEK.map((day) => {
             const isSelected = selectedDays.includes(day);
-            const sched = hours[day];
-            const statusColor = sched?.isClosed
-              ? theme.colors.notAllowed
-              : sched?.is24Hours
-              ? theme.colors.tan
-              : theme.colors.allowed;
 
             return (
               <button
@@ -377,33 +371,20 @@ export const StoreHoursFormInput: React.FC<StoreHoursFormInputProps> = ({
                   setActiveTab('edit');
                 }}
                 style={{
-                  padding: '6px 10px',
-                  borderRadius: '16px',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  border: isSelected ? `2px solid ${theme.colors.terracotta}` : `1px solid ${theme.colors.borderLight}`,
+                  padding: '7px 13px',
+                  borderRadius: '20px',
+                  fontSize: '12px',
+                  fontWeight: isSelected ? 700 : 500,
+                  border: isSelected
+                    ? `1.5px solid ${theme.colors.terracotta}`
+                    : `1px solid ${theme.colors.borderLight}`,
                   backgroundColor: isSelected ? theme.colors.softPink : '#ffffff',
                   color: isSelected ? theme.colors.terracotta : theme.colors.textDark,
                   cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
                   whiteSpace: 'nowrap',
+                  transition: 'all 0.15s ease',
                 }}
               >
-                {isSelected ? (
-                  <FaCheckSquare size={11} style={{ color: theme.colors.terracotta }} />
-                ) : (
-                  <FaRegSquare size={11} style={{ color: theme.colors.textMuted }} />
-                )}
-                <span
-                  style={{
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    backgroundColor: statusColor,
-                  }}
-                />
                 {DAY_LABELS[day].slice(0, 3)}
               </button>
             );
