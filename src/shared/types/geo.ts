@@ -1,3 +1,5 @@
+import type { WeeklyOperatingHours } from './hours';
+
 export interface MapBounds {
   minLat: number;
   minLng: number;
@@ -26,6 +28,7 @@ export interface PlaceInBounds {
   price_range_agreeing_devices: number;
   runner_up_price_range: 'budget' | 'mid' | 'splurge' | null;
   price_range_runner_up_agreeing_devices: number;
+  operating_hours?: WeeklyOperatingHours | null;
 }
 
 export interface ReportItem {

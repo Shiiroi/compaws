@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
+import { theme } from '../../../shared/styles/theme';
 import { supabase } from '../../../shared/api/supabase-client';
 import { getDeviceId } from '../../../shared/utils/device-id';
 import { uuidv4 } from '../../../shared/utils/uuid';
 import { addPendingReport } from '../../../shared/outbox/outbox-db';
 import { PlaceSearchBar } from './PlaceSearchBar';
 import { getPlaceDetails } from '../api/search-google-places';
-import { CityCombobox } from './CityCombobox';
+import { ProvinceCombobox } from './ProvinceCombobox';
+import { StoreHoursFormInput } from './StoreHoursFormInput';
+import type { WeeklyOperatingHours } from '../types/hours';
+import { getDefaultOperatingHours } from '../../../shared/utils/operating-hours';
 
 interface AddPlaceFormProps {
   onClose: () => void;
@@ -67,6 +71,7 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
     return '';
   });
 
+  const [province, setProvince] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>(['Café']);
   const [claim, setClaim] = useState<'allowed' | 'not_allowed' | 'outdoor_only'>('allowed');
   const [petMenu, setPetMenu] = useState<'yes' | 'no' | 'unsure'>('unsure');
@@ -74,6 +79,8 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
   const [reqDiaper, setReqDiaper] = useState(true);
   const [reqCaged, setReqCaged] = useState(false);
   const [reqStroller, setReqStroller] = useState(false);
+  const [operatingHours, setOperatingHours] = useState<WeeklyOperatingHours | null>(null);
+  const [includeStoreHours, setIncludeStoreHours] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -90,9 +97,25 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
     });
   };
 
-  const handleSelectSearch = (lat: number, lng: number, name: string, address: string) => {
+  const handleSelectSearch = (
+    lat: number,
+    lng: number,
+    name: string,
+    address: string,
+    hours?: WeeklyOperatingHours | null,
+    autoCity?: string,
+    autoProvince?: string
+  ) => {
     setSelectedPlace({ id: `custom-${uuidv4()}`, name, address, lat, lng });
-    setCity(extractCityFromAddress(address));
+    const resolvedCity = autoCity || extractCityFromAddress(address);
+    setCity(resolvedCity);
+    if (autoProvince) setProvince(autoProvince);
+    if (hours) {
+      setOperatingHours(hours);
+      setIncludeStoreHours(true);
+    } else {
+      setIncludeStoreHours(false);
+    }
     setErrorMsg(null);
   };
 
@@ -127,6 +150,16 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
         if (details) {
           resolvedLat = details.lat;
           resolvedLng = details.lng;
+          if (details.openingHours && !operatingHours) {
+            setOperatingHours(details.openingHours);
+            setIncludeStoreHours(true);
+          }
+          if (details.city && !city) {
+            setCity(details.city);
+          }
+          if (details.province && !province) {
+            setProvince(details.province);
+          }
         } else {
           throw new Error('Coordinates could not be resolved from search results.');
         }
@@ -146,7 +179,7 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
         p_name: selectedPlace.name,
         p_address: selectedPlace.address,
         p_city: city.trim(),
-        p_province: '',
+        p_province: province.trim(),
         p_categories: selectedCategories,
         p_latitude: resolvedLat,
         p_longitude: resolvedLng,
@@ -155,6 +188,7 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
         p_pet_menu: dbPetMenu,
         p_price_range: priceRange,
         p_notes: formattedRequirements,
+        p_operating_hours: includeStoreHours ? (operatingHours as any) : null,
       });
 
       if (error) throw error;
@@ -187,6 +221,7 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
             p_pet_menu: dbPetMenu,
             p_price_range: priceRange,
             p_notes: formattedRequirements,
+            p_operating_hours: includeStoreHours ? (operatingHours as any) : null,
           });
           alert("Network failure. Saved! We'll register this place once you're back online. 🐾");
           triggerNicknamePromptFlow();
@@ -296,41 +331,29 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
       ) : (
         /* Form content prefilled once place is selected */
         <form onSubmit={handleSubmit}>
-          {/* Row 1: Place Name and City */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
-            <div>
-              <label style={{ display: 'block', fontWeight: 600, fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
-                Place Name
-              </label>
-              <input
-                type="text"
-                value={selectedPlace.name}
-                disabled
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  borderRadius: '8px',
-                  border: '1px solid #ddd',
-                  backgroundColor: '#f3f4f6',
-                  fontSize: '14px',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontWeight: 600, fontSize: '12px', color: '#4b5563', marginBottom: '4px' }}>
-                City *
-              </label>
-              <CityCombobox
-                value={city}
-                onChange={setCity}
-                placeholder="e.g. Quezon City"
-              />
-            </div>
+          {/* Row 1: Place Name */}
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', fontWeight: 600, fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
+              Place Name
+            </label>
+            <input
+              type="text"
+              value={selectedPlace.name}
+              disabled
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '8px',
+                border: '1px solid #ddd',
+                backgroundColor: '#f3f4f6',
+                color: theme.colors.textDark,
+                fontSize: '14px',
+                boxSizing: 'border-box',
+              }}
+            />
           </div>
 
-          {/* Row 2: Address (Whole Row) */}
+          {/* Row 2: Address */}
           <div style={{ marginBottom: '12px' }}>
             <label style={{ display: 'block', fontWeight: 600, fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
               Address
@@ -345,10 +368,47 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
                 borderRadius: '8px',
                 border: '1px solid #ddd',
                 backgroundColor: '#f3f4f6',
+                color: theme.colors.textDark,
                 fontSize: '14px',
                 boxSizing: 'border-box',
               }}
             />
+          </div>
+
+          {/* Row 3: City/Municipality (Read-only) and Province (Editable Combobox) */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+            <div>
+              <label style={{ display: 'block', fontWeight: 600, fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
+                City / Municipality
+              </label>
+              <input
+                type="text"
+                value={city || 'General'}
+                disabled
+                readOnly
+                style={{
+                  width: '100%',
+                  height: '40px',
+                  padding: '0 10px',
+                  borderRadius: '8px',
+                  border: '1px solid #ddd',
+                  backgroundColor: '#f3f4f6',
+                  color: theme.colors.textDark,
+                  fontSize: '14px',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontWeight: 600, fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
+                Province / Region
+              </label>
+              <ProvinceCombobox
+                value={province}
+                onChange={setProvince}
+              />
+            </div>
           </div>
 
           {/* Row 3: Categories / Tags (Whole Row) */}
@@ -381,6 +441,62 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
                 );
               })}
             </div>
+          </div>
+
+          {/* Store Hours Input Component (Optional Toggle) */}
+          <div
+            style={{
+              marginBottom: '16px',
+              backgroundColor: includeStoreHours ? theme.colors.softPink : '#FAFAFA',
+              borderRadius: '14px',
+              border: `1.5px solid ${includeStoreHours ? theme.colors.terracotta : theme.colors.borderLight}`,
+              padding: '12px 14px',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                userSelect: 'none',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <input
+                  type="checkbox"
+                  checked={includeStoreHours}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setIncludeStoreHours(checked);
+                    if (checked && !operatingHours) {
+                      setOperatingHours(getDefaultOperatingHours());
+                    }
+                  }}
+                  style={{
+                    width: '18px',
+                    height: '18px',
+                    accentColor: theme.colors.terracotta,
+                    cursor: 'pointer',
+                  }}
+                />
+                <span style={{ fontSize: '13px', fontWeight: 600, color: theme.colors.textDark }}>
+                  Add store operating hours (Optional)
+                </span>
+              </div>
+              {operatingHours && includeStoreHours && (
+                <span style={{ fontSize: '11px', color: theme.colors.terracotta, fontWeight: 700 }}>
+                  ✓ Hours set
+                </span>
+              )}
+            </label>
+
+            {includeStoreHours && (
+              <div style={{ marginTop: '12px' }}>
+                <StoreHoursFormInput value={operatingHours} onChange={setOperatingHours} />
+              </div>
+            )}
           </div>
 
           <div style={{ marginBottom: '16px', borderTop: '1px solid #eee', paddingTop: '12px' }}>

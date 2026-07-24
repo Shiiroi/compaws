@@ -154,6 +154,7 @@ export type Database = {
           geom: unknown
           id: string
           name: string
+          operating_hours: Json | null
           province: string | null
           status: string
           updated_at: string
@@ -167,6 +168,7 @@ export type Database = {
           geom: unknown
           id?: string
           name: string
+          operating_hours?: Json | null
           province?: string | null
           status?: string
           updated_at?: string
@@ -180,6 +182,7 @@ export type Database = {
           geom?: unknown
           id?: string
           name?: string
+          operating_hours?: Json | null
           province?: string | null
           status?: string
           updated_at?: string
@@ -437,8 +440,16 @@ export type Database = {
           p_name: string
           p_notes: string
           p_province: string
+          p_operating_hours?: Json
         }
         Returns: string
+      }
+      update_place_operating_hours: {
+        Args: {
+          p_place_id: string
+          p_operating_hours: Json
+        }
+        Returns: boolean
       }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
