@@ -269,7 +269,7 @@ const TILE_STYLES: Array<{
   Icon: React.ComponentType<{ size?: number }>;
   attribution: string;
   url: string;
-  overlays?: string[];
+  overlay?: string | null;
 }> = [
   {
     id: 'default',
@@ -277,11 +277,7 @@ const TILE_STYLES: Array<{
     Icon: FaMap,
     url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    overlays: [
-      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
-      'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
-      'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-    ],
+    overlay: null,
   },
   {
     id: 'osm',
@@ -289,7 +285,7 @@ const TILE_STYLES: Array<{
     Icon: FaCity,
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    overlays: [],
+    overlay: null,
   },
   {
     id: 'satellite',
@@ -297,11 +293,7 @@ const TILE_STYLES: Array<{
     Icon: FaSatellite,
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DigitalGlobe, GeoEye, CNES/Airbus DS, USGS, AeroGRID, IGN',
-    overlays: [
-      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
-      'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
-      'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-    ],
+    overlay: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
   },
 ];
 
@@ -669,16 +661,16 @@ export const MapView: React.FC<MapViewProps> = ({
           maxZoom={20}
           maxNativeZoom={19}
         />
-        {activeTile.overlays?.map((overlayUrl, idx) => (
+        {activeTile.overlay && (
           <TileLayer
-            key={`${activeTile.id}-overlay-${idx}`}
-            url={overlayUrl}
+            key={`${activeTile.id}-overlay`}
+            url={activeTile.overlay}
             attribution=""
             pane="overlayPane"
             maxZoom={20}
             maxNativeZoom={19}
           />
-        ))}
+        )}
 
         <MapEvents
           onBoundsChange={onBoundsChange}
