@@ -25,7 +25,7 @@ interface MapViewProps {
   /** Active status for Grab/Angkas/FoodPanda-style center pin drop mode */
   isPinDropActive?: boolean;
   /** Callback emitted on map move during pin drop mode with live center coordinates */
-  onCenterPinMove?: (lat: number, lng: number) => void;
+  onCenterPinMove?: (lat: number, lng: number, clickedName?: string) => void;
 }
 
 interface SuperclusterPointProps {
@@ -371,7 +371,7 @@ export const MapView: React.FC<MapViewProps> = ({
     map.setStyle(selected.style as any);
   }, [tileStyle]);
 
-  // Click map/label in pin drop mode to move the pin directly onto the clicked location
+  // Click map/label in pin drop mode to move the pin directly onto the clicked location & auto-fill its place name
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -379,8 +379,26 @@ export const MapView: React.FC<MapViewProps> = ({
     const handleMapClick = (e: maplibregl.MapMouseEvent) => {
       if (isPinDropActive && onCenterPinMove) {
         const { lat, lng } = e.lngLat;
+        let clickedName: string | undefined;
+
+        try {
+          const features = map.queryRenderedFeatures(e.point);
+          for (const feat of features) {
+            const props = feat.properties;
+            if (props) {
+              const candidate = props.name || props.name_en || props['name:latin'] || props.official_name;
+              if (candidate && typeof candidate === 'string' && candidate.trim()) {
+                clickedName = candidate.trim();
+                break;
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('[Vector Label Query Warning]:', err);
+        }
+
         map.flyTo({ center: [lng, lat], duration: 400 });
-        onCenterPinMove(lat, lng);
+        onCenterPinMove(lat, lng, clickedName);
       }
     };
 

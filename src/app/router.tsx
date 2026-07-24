@@ -71,11 +71,14 @@ const HomePage: React.FC = () => {
     setIsGhostSelected(false);
   };
 
-  const triggerReverseGeocode = async (lat: number, lng: number) => {
+  const triggerReverseGeocode = async (lat: number, lng: number, clickedName?: string) => {
     setIsReverseLoading(true);
     try {
       const res = await reversePhotonGeocode(lat, lng);
       if (res) {
+        if (clickedName && clickedName.trim()) {
+          res.name = clickedName.trim();
+        }
         setReverseGeocodeResult(res);
       }
     } catch (err) {
@@ -118,9 +121,9 @@ const HomePage: React.FC = () => {
     triggerReverseGeocode(pinDropCenter.lat, pinDropCenter.lng);
   };
 
-  const handleCenterPinMove = (lat: number, lng: number) => {
+  const handleCenterPinMove = (lat: number, lng: number, clickedName?: string) => {
     setPinDropCenter({ lat, lng });
-    triggerReverseGeocode(lat, lng);
+    triggerReverseGeocode(lat, lng, clickedName);
   };
 
   const handleCancelPinDrop = () => {
