@@ -10,6 +10,7 @@ import { CityCombobox } from './CityCombobox';
 import { ProvinceCombobox } from './ProvinceCombobox';
 import { StoreHoursFormInput } from './StoreHoursFormInput';
 import type { WeeklyOperatingHours } from '../types/hours';
+import { getDefaultOperatingHours } from '../../../shared/utils/operating-hours';
 
 interface AddPlaceFormProps {
   onClose: () => void;
@@ -80,6 +81,7 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
   const [reqCaged, setReqCaged] = useState(false);
   const [reqStroller, setReqStroller] = useState(false);
   const [operatingHours, setOperatingHours] = useState<WeeklyOperatingHours | null>(null);
+  const [includeStoreHours, setIncludeStoreHours] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -109,7 +111,12 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
     const resolvedCity = autoCity || extractCityFromAddress(address);
     setCity(resolvedCity);
     if (autoProvince) setProvince(autoProvince);
-    if (hours) setOperatingHours(hours);
+    if (hours) {
+      setOperatingHours(hours);
+      setIncludeStoreHours(true);
+    } else {
+      setIncludeStoreHours(false);
+    }
     setErrorMsg(null);
   };
 
@@ -146,6 +153,7 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
           resolvedLng = details.lng;
           if (details.openingHours && !operatingHours) {
             setOperatingHours(details.openingHours);
+            setIncludeStoreHours(true);
           }
           if (details.city && !city) {
             setCity(details.city);
@@ -181,7 +189,7 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
         p_pet_menu: dbPetMenu,
         p_price_range: priceRange,
         p_notes: formattedRequirements,
-        p_operating_hours: operatingHours as any,
+        p_operating_hours: includeStoreHours ? (operatingHours as any) : null,
       });
 
       if (error) throw error;
@@ -214,6 +222,7 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
             p_pet_menu: dbPetMenu,
             p_price_range: priceRange,
             p_notes: formattedRequirements,
+            p_operating_hours: includeStoreHours ? (operatingHours as any) : null,
           });
           alert("Network failure. Saved! We'll register this place once you're back online. 🐾");
           triggerNicknamePromptFlow();
@@ -423,8 +432,61 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
             </div>
           </div>
 
-          {/* Store Hours Input Component */}
-          <StoreHoursFormInput value={operatingHours} onChange={setOperatingHours} />
+          {/* Store Hours Input Component (Optional Toggle) */}
+          <div
+            style={{
+              marginBottom: '16px',
+              backgroundColor: includeStoreHours ? theme.colors.softPink : '#FAFAFA',
+              borderRadius: '14px',
+              border: `1.5px solid ${includeStoreHours ? theme.colors.terracotta : theme.colors.borderLight}`,
+              padding: '12px 14px',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                userSelect: 'none',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <input
+                  type="checkbox"
+                  checked={includeStoreHours}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setIncludeStoreHours(checked);
+                    if (checked && !operatingHours) {
+                      setOperatingHours(getDefaultOperatingHours());
+                    }
+                  }}
+                  style={{
+                    width: '18px',
+                    height: '18px',
+                    accentColor: theme.colors.terracotta,
+                    cursor: 'pointer',
+                  }}
+                />
+                <span style={{ fontSize: '13px', fontWeight: 600, color: theme.colors.textDark }}>
+                  Add store operating hours (Optional)
+                </span>
+              </div>
+              {operatingHours && includeStoreHours && (
+                <span style={{ fontSize: '11px', color: theme.colors.terracotta, fontWeight: 700 }}>
+                  ✓ Hours set
+                </span>
+              )}
+            </label>
+
+            {includeStoreHours && (
+              <div style={{ marginTop: '12px' }}>
+                <StoreHoursFormInput value={operatingHours} onChange={setOperatingHours} />
+              </div>
+            )}
+          </div>
 
           <div style={{ marginBottom: '16px', borderTop: '1px solid #eee', paddingTop: '12px' }}>
             <label style={{ display: 'block', fontWeight: 600, marginBottom: '8px', fontSize: '14px' }}>
