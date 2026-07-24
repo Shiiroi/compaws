@@ -7,11 +7,9 @@ import { getConfidenceStyle } from '../../../shared/utils/confidence-color';
 import { StatusCard } from '../../../shared/components/StatusCard';
 import { StoreHoursView } from './StoreHoursView';
 import { EditStoreHoursModal } from './EditStoreHoursModal';
-import { PetMenuView } from './PetMenuView';
-import { EditPetMenuModal } from './EditPetMenuModal';
 import { MenuPhotosView } from './MenuPhotosView';
 import type { WeeklyOperatingHours } from '../types/hours';
-import type { PetMenuDetails, MenuPhoto } from '../../../shared/types/pet-menu';
+import type { MenuPhoto } from '../../../shared/types/pet-menu';
 
 interface PlaceDetailProps {
   /** The selected place record data. Can be a DB place or a temporary geocoded ghost place. */
@@ -83,16 +81,12 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
   const dbPlace = !isGhost ? (place as PlaceInBounds) : null;
   const [isEditHoursOpen, setIsEditHoursOpen] = useState(false);
   const [localHours, setLocalHours] = useState<WeeklyOperatingHours | null | undefined>(dbPlace?.operating_hours);
-
-  const [isEditMenuOpen, setIsEditMenuOpen] = useState(false);
-  const [localMenuDetails, setLocalMenuDetails] = useState<PetMenuDetails | null | undefined>(dbPlace?.pet_menu_details);
   const [localPhotos, setLocalPhotos] = useState<MenuPhoto[]>(dbPlace?.menu_photos || []);
 
   useEffect(() => {
     setLocalHours(dbPlace?.operating_hours);
-    setLocalMenuDetails(dbPlace?.pet_menu_details);
     setLocalPhotos(dbPlace?.menu_photos || []);
-  }, [dbPlace?.operating_hours, dbPlace?.pet_menu_details, dbPlace?.menu_photos]);
+  }, [dbPlace?.operating_hours, dbPlace?.menu_photos]);
 
   return (
     <div
@@ -223,11 +217,6 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
             <StoreHoursView
               hours={localHours}
               onEditClick={dbPlace ? () => setIsEditHoursOpen(true) : undefined}
-            />
-            <PetMenuView
-              details={localMenuDetails}
-              petMenuClaim={dbPlace?.pet_menu}
-              onEditClick={dbPlace ? () => setIsEditMenuOpen(true) : undefined}
             />
             <MenuPhotosView
               placeId={dbPlace?.id}
@@ -698,16 +687,6 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
           initialHours={localHours}
           onClose={() => setIsEditHoursOpen(false)}
           onSuccess={(updated) => setLocalHours(updated)}
-        />
-      )}
-
-      {isEditMenuOpen && dbPlace && (
-        <EditPetMenuModal
-          placeId={dbPlace.id}
-          placeName={dbPlace.name}
-          initialDetails={localMenuDetails}
-          onClose={() => setIsEditMenuOpen(false)}
-          onSuccess={(updated) => setLocalMenuDetails(updated)}
         />
       )}
     </div>
