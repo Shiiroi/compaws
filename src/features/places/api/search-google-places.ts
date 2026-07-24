@@ -133,29 +133,46 @@ import { parseGoogleOpeningHours } from '../../../shared/utils/operating-hours';
 /**
  * Helper to extract city/municipality and province from Google address components array.
  */
-export function extractLocationFromGoogleComponents(addressComponents?: any[]): { city: string; province: string } {
-  if (!Array.isArray(addressComponents)) {
+export function parseCityProvince(addressComponents: any[]): { city: string; province: string } {
+  if (!addressComponents || !Array.isArray(addressComponents)) {
     return { city: '', province: '' };
   }
 
-  let city = '';
-  let province = '';
+  let locality = '';
+  let sublocality = '';
+  let adminLevel2 = '';
+  let adminLevel1 = '';
 
   for (const comp of addressComponents) {
     const types: string[] = comp.types || [];
-    const text = comp.longText || comp.name || comp.shortText || comp.long_name || comp.short_name || '';
+    const text = (comp.longText || comp.name || comp.shortText || comp.long_name || comp.short_name || '').trim();
 
-    if (!city && (types.includes('locality') || types.includes('administrative_area_level_2') || types.includes('sublocality_level_1'))) {
-      city = text;
-    }
-
-    if (types.includes('administrative_area_level_1')) {
-      province = text;
+    if (types.includes('locality')) {
+      locality = text;
+    } else if (types.includes('sublocality_level_1') || types.includes('sublocality')) {
+      sublocality = text;
+    } else if (types.includes('administrative_area_level_2')) {
+      adminLevel2 = text;
+    } else if (types.includes('administrative_area_level_1')) {
+      adminLevel1 = text;
     }
   }
 
+  let city = locality || sublocality || adminLevel2 || '';
   if (city.startsWith('City of ')) {
     city = city.replace('City of ', '') + ' City';
+  }
+
+  let province = adminLevel2 || adminLevel1 || city;
+
+  // Auto-fill Metro Manila for NCR & all NCR cities
+  const ncrPattern = /ncr|national capital region|metro manila|quezon city|manila|makati|taguig|pasig|mandaluyong|san juan|pasay|parañaque|las piñas|muntinlupa|marikina|valenzuela|malabon|navotas|pateros|caloocan/i;
+  
+  if (ncrPattern.test(adminLevel1) || ncrPattern.test(adminLevel2) || ncrPattern.test(city)) {
+    province = 'Metro Manila';
+  } else if (/region|calabarzon|mimaropa|bicol|soccsksargen|caraga|bangsamoro|cordillera/i.test(adminLevel1) && adminLevel2) {
+    // If adminLevel1 is a Region name, use adminLevel2 as the actual Province
+    province = adminLevel2;
   }
 
   return { city, province };
@@ -194,7 +211,7 @@ export async function getPlaceDetails(
       ? parseGoogleOpeningHours(place.regularOpeningHours)
       : null;
 
-    const locInfo = extractLocationFromGoogleComponents(place.addressComponents);
+    const locInfo = parseCityProvince(place.addressComponents);
 
     return {
       lat: place.location.lat(),

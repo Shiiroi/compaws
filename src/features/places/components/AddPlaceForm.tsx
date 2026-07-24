@@ -367,7 +367,7 @@ export const AddPlaceForm: React.FC<AddPlaceFormProps> = ({
             </div>
             <div>
               <label style={{ display: 'block', fontWeight: 600, fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
-                Province / Region
+                Province
               </label>
               <ProvinceCombobox value={province} onChange={setProvince} />
             </div>

@@ -107,6 +107,8 @@ export const UploadMenuPhotoModal: React.FC<UploadMenuPhotoModalProps> = ({
     }
   };
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+
   const modalContent = (
     <div
       style={{
@@ -118,10 +120,10 @@ export const UploadMenuPhotoModal: React.FC<UploadMenuPhotoModalProps> = ({
         backgroundColor: 'rgba(0,0,0,0.65)',
         backdropFilter: 'blur(3px)',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: isMobile ? 'flex-end' : 'center',
         justifyContent: 'center',
         zIndex: 9999,
-        padding: '16px',
+        padding: isMobile ? '0 0 env(safe-area-inset-bottom, 0px) 0' : '16px',
         boxSizing: 'border-box',
       }}
       onClick={(e) => {
@@ -131,13 +133,13 @@ export const UploadMenuPhotoModal: React.FC<UploadMenuPhotoModalProps> = ({
       <div
         style={{
           backgroundColor: '#ffffff',
-          borderRadius: '24px',
-          padding: '20px',
+          borderRadius: isMobile ? '24px 24px 0 0' : '24px',
+          padding: isMobile ? '20px 20px 32px' : '24px',
           maxWidth: '440px',
           width: '100%',
-          maxHeight: '85vh',
+          maxHeight: isMobile ? '90vh' : '85vh',
           overflowY: 'auto',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+          boxShadow: isMobile ? '0 -10px 40px rgba(0,0,0,0.2)' : '0 20px 40px rgba(0,0,0,0.3)',
           fontFamily: theme.fonts.body,
           boxSizing: 'border-box',
         }}

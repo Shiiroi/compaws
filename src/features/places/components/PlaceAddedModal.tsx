@@ -73,6 +73,8 @@ export const PlaceAddedModal: React.FC<PlaceAddedModalProps> = ({
     }
   };
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+
   const modalContent = (
     <div
       style={{
@@ -85,24 +87,25 @@ export const PlaceAddedModal: React.FC<PlaceAddedModalProps> = ({
         backdropFilter: 'blur(4px)',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'flex-end',
+        justifyContent: isMobile ? 'flex-end' : 'center',
         alignItems: 'center',
         zIndex: 9999,
-        padding: '0 0 env(safe-area-inset-bottom, 0px) 0',
+        padding: isMobile ? '0 0 env(safe-area-inset-bottom, 0px) 0' : '20px',
       }}
     >
       <div
         style={{
           backgroundColor: '#ffffff',
-          borderRadius: '28px 28px 0 0',
-          padding: '24px 20px 32px',
+          borderRadius: isMobile ? '28px 28px 0 0' : '24px',
+          padding: isMobile ? '24px 20px 32px' : '28px 24px',
           width: '100%',
           maxWidth: '480px',
           fontFamily: theme.fonts.body,
           boxSizing: 'border-box',
-          boxShadow: '0 -10px 40px rgba(0,0,0,0.15)',
-          maxHeight: '90vh',
+          boxShadow: isMobile ? '0 -10px 40px rgba(0,0,0,0.15)' : '0 10px 40px rgba(0,0,0,0.2)',
+          maxHeight: isMobile ? '90vh' : '85vh',
           overflowY: 'auto',
+          position: 'relative',
         }}
       >
         {step === 'prompt' ? (
@@ -244,16 +247,15 @@ export const PlaceAddedModal: React.FC<PlaceAddedModalProps> = ({
               </div>
             </div>
 
-            {/* Operating Hours — direct input without toggle */}
+            {/* Operating Hours — direct input without redundant title */}
             <div style={{ marginBottom: '18px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: theme.colors.textDark, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <FaClock size={13} color={theme.colors.terracotta} /> Operating Hours (Optional)
-                </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {autoHours && (
-                    <span style={{ fontSize: '10px', color: theme.colors.terracotta, fontWeight: 700 }}>Auto-filled from Google</span>
-                  )}
+              {(autoHours || hours) && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px', padding: '0 4px' }}>
+                  {autoHours ? (
+                    <span style={{ fontSize: '11px', color: theme.colors.terracotta, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <FaClock size={11} /> Auto-filled from Google Maps
+                    </span>
+                  ) : <span />}
                   {hours && (
                     <button
                       type="button"
@@ -264,7 +266,7 @@ export const PlaceAddedModal: React.FC<PlaceAddedModalProps> = ({
                     </button>
                   )}
                 </div>
-              </div>
+              )}
               <StoreHoursFormInput value={hours} onChange={setHours} />
             </div>
 
