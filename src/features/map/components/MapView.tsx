@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
+import Supercluster from 'supercluster';
 import { theme } from '../../../shared/styles/theme';
 import type { PlaceInBounds, MapBounds } from '../../../shared/types/geo';
 import { getConfidenceStyle } from '../../../shared/utils/confidence-color';
@@ -22,14 +23,17 @@ interface MapViewProps {
   hideExplainer?: boolean;
 }
 
+interface SuperclusterPointProps {
+  cluster?: boolean;
+  placeId?: string;
+  place?: PlaceInBounds;
+}
+
 const MANILA_CENTER: [number, number] = [14.5995, 120.9842];
 const DEFAULT_ZOOM = 12;
 
 /**
  * Creates custom round paw-shaped markers.
- * 
- * @param {string} fillColor - Hex value representing the status colors.
- * @param {string} strokeColor - Hex outline.
  */
 function createCustomPawIcon(fillColor: string, strokeColor: string = '#ffffff') {
   return L.divIcon({
@@ -133,38 +137,42 @@ function createClusterIcon(count: number) {
         background-color: ${theme.colors.terracotta};
         border: 2px solid #ffffff;
         color: #ffffff;
-        width: 36px;
-        height: 36px;
+        width: 38px;
+        height: 38px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 700;
         font-size: 13px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
         font-family: ${theme.fonts.heading};
+        cursor: pointer;
       ">
         ${count}
       </div>
     `,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
+    iconSize: [38, 38],
+    iconAnchor: [19, 19],
   });
 }
 
 const MapEvents: React.FC<{
   onBoundsChange: (bounds: MapBounds) => void;
   onZoomChange: (zoom: number) => void;
-}> = ({ onBoundsChange, onZoomChange }) => {
+  onMapBoundsUpdate: (bounds: MapBounds) => void;
+}> = ({ onBoundsChange, onZoomChange, onMapBoundsUpdate }) => {
   const map = useMapEvents({
     moveend: () => {
       const b = map.getBounds();
-      onBoundsChange({
+      const newBounds = {
         minLat: b.getSouth(),
         minLng: b.getWest(),
         maxLat: b.getNorth(),
         maxLng: b.getEast(),
-      });
+      };
+      onBoundsChange(newBounds);
+      onMapBoundsUpdate(newBounds);
     },
     zoomend: () => {
       onZoomChange(map.getZoom());
@@ -173,12 +181,14 @@ const MapEvents: React.FC<{
 
   useEffect(() => {
     const b = map.getBounds();
-    onBoundsChange({
+    const newBounds = {
       minLat: b.getSouth(),
       minLng: b.getWest(),
       maxLat: b.getNorth(),
       maxLng: b.getEast(),
-    });
+    };
+    onBoundsChange(newBounds);
+    onMapBoundsUpdate(newBounds);
     onZoomChange(map.getZoom());
   }, [map]);
 
@@ -196,20 +206,29 @@ const MapController: React.FC<{ center: [number, number] | null }> = ({ center }
 };
 
 const ClusterMarker: React.FC<{
+  clusterId: number;
   lat: number;
   lng: number;
   count: number;
-  places?: PlaceInBounds[];
+  supercluster: Supercluster<SuperclusterPointProps, any>;
   onSelectPlace: (place: PlaceInBounds) => void;
-}> = ({ lat, lng, count, places, onSelectPlace }) => {
+}> = ({ clusterId, lat, lng, count, supercluster, onSelectPlace }) => {
   const map = useMap();
 
   const handleClick = () => {
     const currentZoom = map.getZoom();
-    if (currentZoom < 17) {
-      map.setView([lat, lng], currentZoom + 2);
-    } else if (places && places.length > 0) {
-      onSelectPlace(places[0]);
+    const expansionZoom = Math.min(
+      supercluster.getClusterExpansionZoom(clusterId),
+      18
+    );
+
+    if (expansionZoom > currentZoom) {
+      map.setView([lat, lng], expansionZoom);
+    } else {
+      const leaves = supercluster.getLeaves(clusterId, 10);
+      if (leaves && leaves.length > 0 && leaves[0].properties?.place) {
+        onSelectPlace(leaves[0].properties.place);
+      }
     }
   };
 
@@ -223,7 +242,7 @@ const ClusterMarker: React.FC<{
 };
 
 /**
- * Main styled Leaflet Map view drawing places and cluster centroids.
+ * Main styled Leaflet Map view drawing places and high-performance Supercluster spatial centroids.
  */
 export const MapView: React.FC<MapViewProps> = ({
   places,
@@ -236,64 +255,42 @@ export const MapView: React.FC<MapViewProps> = ({
 }) => {
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   const [initialCenter] = useState<[number, number]>(MANILA_CENTER);
+  const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
 
+  // Initialize Supercluster instance using screen-pixel distance clustering
+  const supercluster = useMemo(() => {
+    const sc = new Supercluster<SuperclusterPointProps>({
+      radius: 45, // Cluster radius in screen pixels
+      maxZoom: 16, // Maximum zoom level to cluster points
+    });
 
-  const getClusters = () => {
-    const clustered: Array<{
-      isCluster: boolean;
-      lat: number;
-      lng: number;
-      count: number;
-      place?: PlaceInBounds;
-      places?: PlaceInBounds[];
-    }> = [];
+    const points = places.map((place) => ({
+      type: 'Feature' as const,
+      properties: {
+        cluster: false,
+        placeId: place.id,
+        place,
+      },
+      geometry: {
+        type: 'Point' as const,
+        coordinates: [place.longitude, place.latitude] as [number, number],
+      },
+    }));
 
-    const threshold = 0.05 / Math.pow(2, zoom - 8);
-    const visited = new Set<string>();
+    sc.load(points);
+    return sc;
+  }, [places]);
 
-    for (const place of places) {
-      if (visited.has(place.id)) continue;
-
-      const group = [place];
-      visited.add(place.id);
-
-      for (const other of places) {
-        if (visited.has(other.id)) continue;
-
-        const dist = Math.sqrt(
-          Math.pow(place.latitude - other.latitude, 2) +
-          Math.pow(place.longitude - other.longitude, 2)
-        );
-
-        if (dist < threshold) {
-          group.push(other);
-          visited.add(other.id);
-        }
-      }
-
-      if (group.length > 1) {
-        const sumLat = group.reduce((acc, p) => acc + p.latitude, 0);
-        const sumLng = group.reduce((acc, p) => acc + p.longitude, 0);
-        clustered.push({
-          isCluster: true,
-          lat: sumLat / group.length,
-          lng: sumLng / group.length,
-          count: group.length,
-          places: group,
-        });
-      } else {
-        clustered.push({
-          isCluster: false,
-          lat: place.latitude,
-          lng: place.longitude,
-          count: 1,
-          place,
-        });
-      }
-    }
-
-    return clustered;
-  };
+  const clusters = useMemo(() => {
+    if (!mapBounds) return [];
+    const bbox: [number, number, number, number] = [
+      mapBounds.minLng,
+      mapBounds.minLat,
+      mapBounds.maxLng,
+      mapBounds.maxLat,
+    ];
+    return supercluster.getClusters(bbox, Math.floor(zoom));
+  }, [supercluster, mapBounds, zoom]);
 
   const getMarkerIcon = (place: PlaceInBounds) => {
     const style = getConfidenceStyle('policy', place.claim, place.agreeing_devices, place.runner_up_agreeing_devices);
@@ -304,8 +301,6 @@ export const MapView: React.FC<MapViewProps> = ({
     
     return createUnconfirmedPawIcon(style.textColor);
   };
-
-  const clusters = getClusters();
 
   return (
     <div 
@@ -318,10 +313,6 @@ export const MapView: React.FC<MapViewProps> = ({
         boxShadow: '0 8px 25px rgba(224, 122, 95, 0.08)',
       }}
     >
-      {/* 
-        Applies a warm sepia and saturation tint to match the brand palette.
-        If road names become difficult to read, adjust the sepia or saturation percentage.
-      */}
       <style>{`
         .map-container .leaflet-tile-pane {
           filter: sepia(8%) saturate(85%) hue-rotate(-8deg);
@@ -334,45 +325,53 @@ export const MapView: React.FC<MapViewProps> = ({
         className="map-container"
         style={{ width: '100%', height: '100%', zIndex: 1 }}
       >
-        {/*
-          CARTO Positron provides a clean basemap that minimizes visual noise.
-          This light background highlights custom place markers clearly.
-        */}
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
 
-        <MapEvents onBoundsChange={onBoundsChange} onZoomChange={setZoom} />
+        <MapEvents
+          onBoundsChange={onBoundsChange}
+          onZoomChange={setZoom}
+          onMapBoundsUpdate={setMapBounds}
+        />
         <MapController center={centerOverride} />
 
-        {/* Render normal places and clusters */}
-        {clusters.map((node, idx) => {
-          if (node.isCluster) {
+        {/* Render Supercluster points and centroids */}
+        {clusters.map((feature, idx) => {
+          const [lng, lat] = feature.geometry.coordinates;
+          const isCluster = feature.properties?.cluster;
+
+          if (isCluster) {
+            const pointCount = (feature.properties as any).point_count;
+            const clusterId = feature.id as number;
+
             return (
               <ClusterMarker
-                key={`cluster-${idx}`}
-                lat={node.lat}
-                lng={node.lng}
-                count={node.count}
-                places={node.places}
+                key={`cluster-${clusterId || idx}`}
+                clusterId={clusterId}
+                lat={lat}
+                lng={lng}
+                count={pointCount}
+                supercluster={supercluster}
                 onSelectPlace={onSelectPlace}
               />
             );
-          } else if (node.place) {
-            const p = node.place;
-            return (
-              <Marker
-                key={p.id}
-                position={[p.latitude, p.longitude]}
-                icon={getMarkerIcon(p)}
-                eventHandlers={{
-                  click: () => onSelectPlace(p),
-                }}
-              />
-            );
           }
-          return null;
+
+          const place = feature.properties?.place;
+          if (!place) return null;
+
+          return (
+            <Marker
+              key={place.id}
+              position={[lat, lng]}
+              icon={getMarkerIcon(place)}
+              eventHandlers={{
+                click: () => onSelectPlace(place),
+              }}
+            />
+          );
         })}
 
         {/* Render ghost place selection from geocoder if present */}
@@ -398,20 +397,35 @@ export const MapView: React.FC<MapViewProps> = ({
             backgroundColor: 'rgba(255, 255, 255, 0.95)',
             borderRadius: '20px',
             padding: '24px',
-            boxShadow: '0 8px 30px rgba(0,0,0,0.1)',
-            zIndex: 999,
+            boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
             textAlign: 'center',
-            maxWidth: '300px',
-            border: `2px dashed ${theme.colors.tan}`,
-            fontFamily: theme.fonts.body,
+            maxWidth: '280px',
+            zIndex: 1000,
+            pointerEvents: 'none',
+            border: `1.5px solid ${theme.colors.softPink}`,
           }}
         >
-          <div style={{ fontSize: '40px', marginBottom: '8px' }}>🐾</div>
-          <h3 style={{ fontFamily: theme.fonts.heading, fontSize: '18px', color: theme.colors.terracotta, margin: '0 0 6px 0' }}>
-            No furbaby spots here!
+          <div style={{ fontSize: '32px', marginBottom: '8px' }}>📍</div>
+          <h3
+            style={{
+              fontSize: '16px',
+              fontWeight: 700,
+              color: theme.colors.textDark,
+              margin: '0 0 6px 0',
+              fontFamily: theme.fonts.heading,
+            }}
+          >
+            No spots reported here yet
           </h3>
-          <p style={{ fontSize: '12px', color: theme.colors.textMuted, margin: 0, lineHeight: '1.5' }}>
-            No pet-friendly places reported in this area yet -- be the first! 🐾
+          <p
+            style={{
+              fontSize: '12px',
+              color: theme.colors.textMuted,
+              margin: 0,
+              lineHeight: 1.4,
+            }}
+          >
+            Search for a place above to be the first to contribute a pet policy! 🐾
           </p>
         </div>
       )}
