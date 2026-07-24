@@ -9,8 +9,9 @@ import { StoreHoursView } from './StoreHoursView';
 import { EditStoreHoursModal } from './EditStoreHoursModal';
 import { PetMenuView } from './PetMenuView';
 import { EditPetMenuModal } from './EditPetMenuModal';
+import { MenuPhotosView } from './MenuPhotosView';
 import type { WeeklyOperatingHours } from '../types/hours';
-import type { PetMenuDetails } from '../../../shared/types/pet-menu';
+import type { PetMenuDetails, MenuPhoto } from '../../../shared/types/pet-menu';
 
 interface PlaceDetailProps {
   /** The selected place record data. Can be a DB place or a temporary geocoded ghost place. */
@@ -85,11 +86,13 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
 
   const [isEditMenuOpen, setIsEditMenuOpen] = useState(false);
   const [localMenuDetails, setLocalMenuDetails] = useState<PetMenuDetails | null | undefined>(dbPlace?.pet_menu_details);
+  const [localPhotos, setLocalPhotos] = useState<MenuPhoto[]>(dbPlace?.menu_photos || []);
 
   useEffect(() => {
     setLocalHours(dbPlace?.operating_hours);
     setLocalMenuDetails(dbPlace?.pet_menu_details);
-  }, [dbPlace?.operating_hours, dbPlace?.pet_menu_details]);
+    setLocalPhotos(dbPlace?.menu_photos || []);
+  }, [dbPlace?.operating_hours, dbPlace?.pet_menu_details, dbPlace?.menu_photos]);
 
   return (
     <div
@@ -225,6 +228,14 @@ export const PlaceDetail: React.FC<PlaceDetailProps> = ({
               details={localMenuDetails}
               petMenuClaim={dbPlace?.pet_menu}
               onEditClick={dbPlace ? () => setIsEditMenuOpen(true) : undefined}
+            />
+            <MenuPhotosView
+              placeId={dbPlace?.id}
+              placeName={dbPlace?.name}
+              photos={localPhotos}
+              onPhotoUploaded={(newPhoto) => {
+                setLocalPhotos((prev) => [...prev, newPhoto]);
+              }}
             />
           </>
         )}

@@ -1,5 +1,5 @@
 import type { WeeklyOperatingHours } from './hours';
-import type { PetMenuDetails } from './pet-menu';
+import type { PetMenuDetails, MenuPhoto } from './pet-menu';
 
 export interface MapBounds {
   minLat: number;
@@ -31,6 +31,7 @@ export interface PlaceInBounds {
   price_range_runner_up_agreeing_devices: number;
   operating_hours?: WeeklyOperatingHours | null;
   pet_menu_details?: PetMenuDetails | null;
+  menu_photos?: MenuPhoto[] | null;
 }
 
 export interface ReportItem {

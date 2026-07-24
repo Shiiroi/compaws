@@ -18,5 +18,8 @@ export { EditStoreHoursModal } from './components/EditStoreHoursModal';
 export { PetMenuView } from './components/PetMenuView';
 export { PetMenuFormInput } from './components/PetMenuFormInput';
 export { EditPetMenuModal } from './components/EditPetMenuModal';
+export { MenuPhotosView } from './components/MenuPhotosView';
+export { UploadMenuPhotoModal } from './components/UploadMenuPhotoModal';
+export { MenuPhotoLightboxModal } from './components/MenuPhotoLightboxModal';
 export type { PlaceInBounds, MapBounds } from '../../shared/types/geo';
 export type { GeocodingResult } from './api/search-google-places';
