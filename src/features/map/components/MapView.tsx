@@ -37,41 +37,7 @@ interface SuperclusterPointProps {
 const MANILA_CENTER: [number, number] = [120.9842, 14.5995]; // [lng, lat] for MapLibre GL
 const DEFAULT_ZOOM = 12;
 
-// Native MapLibre GL v8 Style Specifications
-const DEFAULT_STYLE: maplibregl.StyleSpecification = {
-  version: 8,
-  sources: {
-    'carto-voyager': {
-      type: 'raster',
-      tiles: ['https://cartodb-basemaps-a.global.ssl.fastly.net/rastertiles/voyager/{z}/{x}/{y}{r}.png'],
-      tileSize: 256,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    },
-    'carto-labels': {
-      type: 'raster',
-      tiles: ['https://cartodb-basemaps-a.global.ssl.fastly.net/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png'],
-      tileSize: 256,
-    },
-  },
-  layers: [
-    { id: 'carto-voyager-base', type: 'raster', source: 'carto-voyager' },
-    { id: 'carto-labels-overlay', type: 'raster', source: 'carto-labels' },
-  ],
-};
-
-const OSM_STYLE: maplibregl.StyleSpecification = {
-  version: 8,
-  sources: {
-    'osm-tiles': {
-      type: 'raster',
-      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-      tileSize: 256,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    },
-  },
-  layers: [{ id: 'osm-tiles-layer', type: 'raster', source: 'osm-tiles' }],
-};
-
+// Native MapLibre GL Satellite style definition
 const SATELLITE_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
@@ -98,19 +64,19 @@ const TILE_STYLES = [
     id: 'default',
     label: 'Default',
     Icon: FaMap,
-    style: DEFAULT_STYLE,
+    styleUrl: 'https://tiles.openfreemap.org/styles/liberty',
   },
   {
     id: 'osm',
     label: 'Detailed',
     Icon: FaCity,
-    style: OSM_STYLE,
+    styleUrl: 'https://tiles.openfreemap.org/styles/bright',
   },
   {
     id: 'satellite',
     label: 'Satellite',
     Icon: FaSatellite,
-    style: SATELLITE_STYLE,
+    styleObj: SATELLITE_STYLE,
   },
 ] as const;
 
@@ -322,11 +288,9 @@ export const MapView: React.FC<MapViewProps> = ({
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    const initialStyleObj = TILE_STYLES.find((s) => s.id === tileStyle)?.style || TILE_STYLES[0].style;
-
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: initialStyleObj as any,
+      style: SATELLITE_STYLE, // start with reliable inline style, then load active tileStyle
       center: MANILA_CENTER,
       zoom: DEFAULT_ZOOM,
       maxZoom: 20,
@@ -360,11 +324,31 @@ export const MapView: React.FC<MapViewProps> = ({
     };
   }, []);
 
-  // Update map style when tileStyle changes
+  // Load style when tileStyle changes
   useEffect(() => {
-    if (!mapRef.current) return;
-    const styleObj = TILE_STYLES.find((s) => s.id === tileStyle)?.style || TILE_STYLES[0].style;
-    mapRef.current.setStyle(styleObj as any);
+    const map = mapRef.current;
+    if (!map) return;
+
+    const selected = TILE_STYLES.find((s) => s.id === tileStyle) || TILE_STYLES[0];
+
+    if ('styleObj' in selected && selected.styleObj) {
+      map.setStyle(selected.styleObj as any);
+    } else if ('styleUrl' in selected && selected.styleUrl) {
+      fetch(selected.styleUrl)
+        .then((res) => res.json())
+        .then((styleJson) => {
+          styleJson.glyphs = 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf';
+          if (mapRef.current) {
+            mapRef.current.setStyle(styleJson);
+          }
+        })
+        .catch((err) => {
+          console.warn('[Vector Style Fetch Warning]:', err);
+          if (mapRef.current) {
+            mapRef.current.setStyle(selected.styleUrl);
+          }
+        });
+    }
   }, [tileStyle]);
 
   // Center override navigation
